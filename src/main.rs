@@ -173,18 +173,20 @@ async fn main() -> Result<()> {
 
     // Keep track of last sync
     let mut last_sync = Instant::now();
+    let mut last_event = Instant::now();
     let sync_interval = Duration::from_secs(2);
+    let rename_delay = Duration::from_secs(1);
 
     println!("Auto-sync started. Press Ctrl+C to stop.");
 
     // Main event loop
     loop {
-        if rx.recv_timeout(Duration::from_secs(1)).is_ok() {
-            // Wait for sync interval before pushing changes
-            if last_sync.elapsed() >= sync_interval {
-                sync_changes(&path).await?;
-                last_sync = Instant::now();
-            }
+        if rx.recv_timeout(Duration::from_millis(100)).is_ok() {
+            last_event = Instant::now();
+        } else if last_event.elapsed() >= rename_delay && last_sync.elapsed() >= sync_interval {
+            // Only sync if we haven't seen events for rename_delay duration
+            sync_changes(&path).await?;
+            last_sync = Instant::now();
         }
     }
 }
