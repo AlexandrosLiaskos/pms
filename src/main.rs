@@ -10,7 +10,7 @@ use serde_json::json;
 mod config;
 use config::Config;
 
-async fn create_github_repository(token: &str, username: &str, name: &str) -> Result<()> {
+async fn create_github_repository(token: &str, name: &str) -> Result<()> {
     let client = Client::new();
     let response = client
         .post("https://api.github.com/user/repos")
@@ -69,7 +69,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
 
     // Create GitHub repository if it doesn't exist
     println!("Setting up GitHub repository...");
-    create_github_repository(&config.github_token, &config.git_username, repo_name).await?;
+    create_github_repository(&config.github_token, repo_name).await?;
 
     // Set up remote
     Command::new("git")
