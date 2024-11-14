@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::mpsc::channel;
 use std::time::{Duration, Instant};
@@ -171,22 +172,36 @@ async fn main() -> Result<()> {
     // Start watching the directory
     watcher.watch(path.as_ref(), RecursiveMode::Recursive)?;
 
-    // Keep track of last sync
+    // Keep track of last sync and pending files
     let mut last_sync = Instant::now();
-    let mut last_event = Instant::now();
     let sync_interval = Duration::from_secs(2);
-    let rename_delay = Duration::from_secs(1);
+    let mut pending_files = HashMap::new();
 
     println!("Auto-sync started. Press Ctrl+C to stop.");
 
     // Main event loop
     loop {
-        if rx.recv_timeout(Duration::from_millis(100)).is_ok() {
-            last_event = Instant::now();
-        } else if last_event.elapsed() >= rename_delay && last_sync.elapsed() >= sync_interval {
-            // Only sync if we haven't seen events for rename_delay duration
-            sync_changes(&path).await?;
-            last_sync = Instant::now();
+        match rx.recv_timeout(Duration::from_millis(100)) {
+            Ok(event) => {
+                match event.kind {
+                    EventKind::Create(_) | EventKind::Modify(_) => {
+                        for path in event.paths {
+                            pending_files.insert(path, Instant::now());
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            Err(_) => {
+                // Remove files that haven't been modified for 2 seconds
+                pending_files.retain(|_, last_mod| last_mod.elapsed() < Duration::from_secs(2));
+
+                // Only sync if we have no pending files and enough time has passed
+                if pending_files.is_empty() && last_sync.elapsed() >= sync_interval {
+                    sync_changes(&path).await?;
+                    last_sync = Instant::now();
+                }
+            }
         }
     }
 }
