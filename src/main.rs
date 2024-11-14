@@ -133,7 +133,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
 
     // Force push to main branch
     Command::new("git")
-        .args(["push", "-f", "origin", "HEAD:main"])
+        .args(["push", "-f", "origin", "+HEAD:refs/heads/main"])
         .current_dir(path)
         .output()
         .await
@@ -342,9 +342,9 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
 
         logging::git_operation("Force pushing changes...");
         
-        // Force push changes
+        // Force push changes with explicit ref
         let output = Command::new("git")
-            .args(["push", "-f", "origin", "HEAD:main"])
+            .args(["push", "-f", "origin", "+HEAD:refs/heads/main"])
             .current_dir(path)
             .output()
             .await
