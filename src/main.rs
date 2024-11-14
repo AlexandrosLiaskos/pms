@@ -8,6 +8,96 @@ use tokio::process::Command;
 mod config;
 use config::Config;
 
+async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
+    // Check if Git is initialized
+    if !path.join(".git").exists() {
+        println!("Initializing Git repository...");
+        Command::new("git")
+            .arg("init")
+            .current_dir(path)
+            .output()
+            .await
+            .context("Failed to initialize Git repository")?;
+    }
+
+    // Set Git config
+    Command::new("git")
+        .args(["config", "user.name", &config.git_username])
+        .current_dir(path)
+        .output()
+        .await
+        .context("Failed to set git username")?;
+
+    Command::new("git")
+        .args(["config", "user.email", &config.git_email])
+        .current_dir(path)
+        .output()
+        .await
+        .context("Failed to set git email")?;
+
+    // Check if remote exists
+    let remote_exists = Command::new("git")
+        .args(["remote"])
+        .current_dir(path)
+        .output()
+        .await?
+        .stdout;
+
+    if !String::from_utf8_lossy(&remote_exists).contains("origin") {
+        println!("Please enter your GitHub repository URL (e.g., https://github.com/username/repo):");
+        let mut url = String::new();
+        std::io::stdin().read_line(&mut url)?;
+        let url = url.trim();
+
+        if !url.starts_with("https://github.com") {
+            anyhow::bail!("Invalid GitHub URL. Must start with https://github.com");
+        }
+
+        // Add remote with token
+        let remote_url = format!(
+            "https://{}@{}",
+            config.github_token,
+            url.trim_start_matches("https://")
+        );
+
+        Command::new("git")
+            .args(["remote", "add", "origin", &remote_url])
+            .current_dir(path)
+            .output()
+            .await
+            .context("Failed to add remote")?;
+
+        // Create initial commit if needed
+        let status = Command::new("git")
+            .args(["status", "--porcelain"])
+            .current_dir(path)
+            .output()
+            .await?;
+
+        if !status.stdout.is_empty() {
+            Command::new("git")
+                .args(["add", "."])
+                .current_dir(path)
+                .output()
+                .await?;
+
+            Command::new("git")
+                .args(["commit", "-m", "Initial commit"])
+                .current_dir(path)
+                .output()
+                .await?;
+
+            Command::new("git")
+                .args(["push", "-u", "origin", "main"])
+                .current_dir(path)
+                .output()
+                .await?;
+        }
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Get directory to monitor from command line
@@ -29,45 +119,8 @@ async fn main() -> Result<()> {
         }
     };
 
-    // Set up Git credentials
-    Command::new("git")
-        .args(["config", "user.name", &config.git_username])
-        .current_dir(&path)
-        .output()
-        .await
-        .context("Failed to set git username")?;
-
-    Command::new("git")
-        .args(["config", "user.email", &config.git_email])
-        .current_dir(&path)
-        .output()
-        .await
-        .context("Failed to set git email")?;
-
-    // Update origin URL to include token
-    if let Ok(output) = Command::new("git")
-        .args(["remote", "get-url", "origin"])
-        .current_dir(&path)
-        .output()
-        .await
-    {
-        if let Ok(url) = String::from_utf8(output.stdout) {
-            let url = url.trim();
-            if url.starts_with("https://github.com") {
-                let new_url = format!(
-                    "https://{}@github.com/{}",
-                    config.github_token,
-                    url.trim_start_matches("https://github.com/")
-                );
-                Command::new("git")
-                    .args(["remote", "set-url", "origin", &new_url])
-                    .current_dir(&path)
-                    .output()
-                    .await
-                    .context("Failed to update remote URL")?;
-            }
-        }
-    }
+    // Initialize repository if needed
+    init_repository(&path, &config).await?;
 
     println!("Monitoring directory: {}", path.display());
 
@@ -137,7 +190,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
         
         // Push changes
         let output = Command::new("git")
-            .args(["push"])
+            .args(["push", "origin", "HEAD"])
             .current_dir(path)
             .output()
             .await
