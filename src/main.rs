@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::mpsc::channel;
