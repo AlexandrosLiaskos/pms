@@ -338,7 +338,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             logging::error(&String::from_utf8_lossy(&output.stderr));
             return Err(anyhow::anyhow!("Failed to push changes"));
         } else {
-            logging::success("Changes pushed successfully ✓");
+            logging::success("Changes pushed!");
         }
     }
 
