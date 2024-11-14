@@ -352,7 +352,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             logging::error(&String::from_utf8_lossy(&output.stderr));
             return Err(anyhow::anyhow!("Failed to push changes"));
         } else {
-            logging::git_success("Commit synced");
+            logging::success("Changes pushed successfully ✓");
         }
     }
 
