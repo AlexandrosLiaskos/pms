@@ -7,8 +7,10 @@ use std::time::{Duration, Instant};
 use tokio::process::Command;
 use reqwest::Client;
 use serde_json::json;
+use colored::*;
 
 mod config;
+mod logging;
 use config::Config;
 
 async fn create_github_repository(token: &str, name: &str) -> Result<()> {
@@ -44,7 +46,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
 
     // Initialize Git if needed
     if !path.join(".git").exists() {
-        println!("Initializing Git repository...");
+        logging::init_message("Initializing Git repository...");
         Command::new("git")
             .arg("init")
             .current_dir(path)
@@ -54,6 +56,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
     }
 
     // Set Git config
+    logging::init_message("Configuring Git credentials...");
     Command::new("git")
         .args(["config", "user.name", &config.git_username])
         .current_dir(path)
@@ -69,7 +72,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .context("Failed to set git email")?;
 
     // Create GitHub repository if it doesn't exist
-    println!("Setting up GitHub repository...");
+    logging::init_message("Setting up GitHub repository...");
     create_github_repository(&config.github_token, repo_name).await?;
 
     // Set up remote
@@ -95,7 +98,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .context("Failed to add remote")?;
 
     // Force push all files initially
-    println!("Performing initial force push...");
+    logging::git_operation("Performing initial force push...");
     Command::new("git")
         .args(["add", "."])
         .current_dir(path)
@@ -129,6 +132,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .output()
         .await?;
 
+    logging::success("Repository initialized successfully");
     Ok(())
 }
 
@@ -147,8 +151,8 @@ async fn main() -> Result<()> {
         Ok(config) => config,
         Err(_) => {
             let config_path = Config::save_example()?;
-            println!("Created example config at: {}", config_path.display());
-            println!("Please edit this file with your GitHub credentials and run again.");
+            logging::info(&format!("Created example config at: {}", config_path.display()));
+            logging::info("Please edit this file with your GitHub credentials and run again.");
             return Ok(());
         }
     };
@@ -156,14 +160,14 @@ async fn main() -> Result<()> {
     // Initialize repository if needed
     init_repository(&path, &config).await?;
 
-    println!("Monitoring directory: {}", path.display());
+    logging::startup_message(&path);
 
     // Set up file system watcher
     let (tx, rx) = channel();
     let mut watcher = RecommendedWatcher::new(
         move |res| {
             if let Ok(event) = res {
-                tx.send(event).unwrap_or_else(|e| println!("Error: {}", e));
+                tx.send(event).unwrap_or_else(|e| logging::error(&e.to_string()));
             }
         },
         notify::Config::default(),
@@ -177,22 +181,42 @@ async fn main() -> Result<()> {
     let sync_interval = Duration::from_secs(2);
     let mut waiting_for_rename = false;
 
-    println!("Auto-sync started. Press Ctrl+C to stop.");
-
     // Main event loop
     loop {
         match rx.recv_timeout(Duration::from_millis(100)) {
             Ok(event) => {
                 match event.kind {
                     EventKind::Create(_) => {
-                        // New file created, wait for potential rename
+                        if let Some(file_path) = event.paths.first() {
+                            logging::status_change(file_path, "added", Color::Green);
+                        }
                         waiting_for_rename = true;
                         tokio::time::sleep(Duration::from_secs(1)).await;
                     },
                     EventKind::Modify(ModifyKind::Name(_)) => {
-                        // File renamed, can sync now
+                        if let Some(file_path) = event.paths.get(1) {
+                            logging::status_change(file_path, "renamed", Color::Yellow);
+                        }
                         waiting_for_rename = false;
                         if last_sync.elapsed() >= sync_interval {
+                            sync_changes(&path).await?;
+                            last_sync = Instant::now();
+                        }
+                    },
+                    EventKind::Remove(_) => {
+                        if let Some(file_path) = event.paths.first() {
+                            logging::status_change(file_path, "deleted", Color::Red);
+                        }
+                        if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
+                            sync_changes(&path).await?;
+                            last_sync = Instant::now();
+                        }
+                    },
+                    EventKind::Modify(_) => {
+                        if let Some(file_path) = event.paths.first() {
+                            logging::status_change(file_path, "modified", Color::Blue);
+                        }
+                        if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
                             sync_changes(&path).await?;
                             last_sync = Instant::now();
                         }
@@ -217,8 +241,6 @@ async fn main() -> Result<()> {
 }
 
 async fn sync_changes(path: &PathBuf) -> Result<()> {
-    println!("Checking for changes...");
-
     // Add all changes
     Command::new("git")
         .args(["add", "."])
@@ -236,7 +258,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
         .context("Failed to check git status")?;
 
     if !status.stdout.is_empty() {
-        println!("Changes detected, creating commit...");
+        logging::git_operation("Creating commit...");
         
         // Create commit
         Command::new("git")
@@ -246,7 +268,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             .await
             .context("Failed to create commit")?;
 
-        println!("Pushing changes...");
+        logging::git_operation("Pushing changes...");
         
         // Push changes
         let output = Command::new("git")
@@ -257,9 +279,9 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             .context("Failed to push changes")?;
 
         if !output.status.success() {
-            println!("Push failed: {}", String::from_utf8_lossy(&output.stderr));
+            logging::error(&String::from_utf8_lossy(&output.stderr));
         } else {
-            println!("Changes pushed successfully");
+            logging::success("Changes pushed successfully");
         }
     }
 
