@@ -40,10 +40,12 @@ The tool will:
 - Initialize Git if needed
 - Create a GitHub repository using the directory name
 - Set up remote automatically
-- Create initial commit if needed
+- Force push all existing files (overwrites any remote content)
 - Monitor for changes
 - Auto-commit changes every 2 seconds
 - Push to GitHub automatically
+
+Note: The initial force push ensures your local files are exactly mirrored on GitHub, regardless of any existing content in the repository.
 
 Press Ctrl+C to stop monitoring.
 
@@ -52,11 +54,13 @@ Press Ctrl+C to stop monitoring.
 ```bash
 $ mkdir my-project
 $ cd my-project
+$ touch README.md
 $ ../auto-git-sync/target/debug/auto-git-sync
 Initializing Git repository...
 Setting up GitHub repository...
+Performing initial force push...
 Monitoring directory: /path/to/my-project
 Auto-sync started. Press Ctrl+C to stop.
 ```
 
-Your project will be available at `https://github.com/YourUsername/my-project`
+Your project will be available at `https://github.com/YourUsername/my-project` with all local files pushed to the main branch.
