@@ -22,7 +22,8 @@ fn should_ignore_file(path: &PathBuf) -> bool {
     if file_name == "index.lock" || 
        file_name.starts_with(".git") ||
        file_name == ".DS_Store" ||
-       file_name == "Thumbs.db" {
+       file_name == "Thumbs.db" ||
+       file_name == "New Text Document.txt" {  // Skip Windows' initial file name
         return true;
     }
 
@@ -213,15 +214,12 @@ async fn main() -> Result<()> {
 
                 match event.kind {
                     EventKind::Create(_) => {
-                        if let Some(file_path) = event.paths.first() {
-                            logging::status_change(file_path, "added", Color::Green);
-                        }
                         waiting_for_rename = true;
                         tokio::time::sleep(Duration::from_secs(1)).await;
                     },
                     EventKind::Modify(ModifyKind::Name(_)) => {
                         if let Some(file_path) = event.paths.get(1) {
-                            logging::status_change(file_path, "renamed", Color::Yellow);
+                            logging::status_change(file_path, "added", Color::BrightGreen);
                         }
                         waiting_for_rename = false;
                         if last_sync.elapsed() >= sync_interval {
@@ -256,7 +254,9 @@ async fn main() -> Result<()> {
                     },
                     EventKind::Modify(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            logging::status_change(file_path, "modified", Color::Blue);
+                            if !waiting_for_rename {
+                                logging::status_change(file_path, "modified", Color::Blue);
+                            }
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
                             if let Err(e) = sync_changes(&path).await {
