@@ -180,7 +180,13 @@ async fn main() -> Result<()> {
     // Initialize repository if needed
     init_repository(&path, &config).await?;
 
-    logging::startup_message(&path);
+    // Get repository name for startup message
+    let repo_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unnamed-project");
+
+    logging::startup_message(&path, &config.git_username, repo_name);
 
     // Set up file system watcher
     let (tx, rx) = channel();
