@@ -31,19 +31,36 @@ git_email = "your.email@example.com"
 
 ## Usage
 
-Run in a Git repository:
-```bash
-./target/debug/auto-git-sync /path/to/repo
-```
+1. Create a new repository on GitHub:
+   - Go to GitHub.com
+   - Click "New repository"
+   - Give it a name
+   - Don't initialize with README
+   - Copy the repository URL
 
-Or in current directory:
+2. Run in your project directory:
 ```bash
 ./target/debug/auto-git-sync
 ```
 
+3. When prompted, paste your GitHub repository URL (e.g., https://github.com/username/repo)
+
 The tool will:
-- Monitor the directory for changes
+- Initialize Git if needed
+- Set up the remote repository
+- Create initial commit if needed
+- Monitor for changes
 - Auto-commit changes every 2 seconds
 - Push to GitHub automatically
 
 Press Ctrl+C to stop monitoring.
+
+## Example
+
+```bash
+$ cd my-project
+$ ../auto-git-sync/target/debug/auto-git-sync
+Initializing Git repository...
+Please enter your GitHub repository URL: https://github.com/username/my-project
+Monitoring directory: /path/to/my-project
+Auto-sync started. Press Ctrl+C to stop.
