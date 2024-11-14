@@ -340,11 +340,11 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             .await
             .context("Failed to create commit")?;
 
-        logging::git_operation("Pushing changes...");
+        logging::git_operation("Force pushing changes...");
         
-        // Push changes
+        // Force push changes
         let output = Command::new("git")
-            .args(["push", "origin", "HEAD"])
+            .args(["push", "-f", "origin", "HEAD:main"])
             .current_dir(path)
             .output()
             .await
