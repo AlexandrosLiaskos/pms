@@ -95,32 +95,40 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .await
         .context("Failed to add remote")?;
 
-    // Create initial commit if needed
-    let status = Command::new("git")
-        .args(["status", "--porcelain"])
+    // Force push all files initially
+    println!("Performing initial force push...");
+    Command::new("git")
+        .args(["add", "."])
         .current_dir(path)
         .output()
         .await?;
 
-    if !status.stdout.is_empty() {
-        Command::new("git")
-            .args(["add", "."])
-            .current_dir(path)
-            .output()
-            .await?;
+    Command::new("git")
+        .args(["commit", "-m", "Initial commit"])
+        .current_dir(path)
+        .output()
+        .await?;
 
-        Command::new("git")
-            .args(["commit", "-m", "Initial commit"])
-            .current_dir(path)
-            .output()
-            .await?;
+    // Force push to main branch
+    Command::new("git")
+        .args(["push", "-f", "origin", "HEAD:main"])
+        .current_dir(path)
+        .output()
+        .await
+        .context("Failed to push initial commit")?;
 
-        Command::new("git")
-            .args(["push", "-u", "origin", "main"])
-            .current_dir(path)
-            .output()
-            .await?;
-    }
+    // Set upstream
+    Command::new("git")
+        .args(["branch", "-M", "main"])
+        .current_dir(path)
+        .output()
+        .await?;
+
+    Command::new("git")
+        .args(["branch", "--set-upstream-to=origin/main", "main"])
+        .current_dir(path)
+        .output()
+        .await?;
 
     Ok(())
 }
