@@ -1,6 +1,15 @@
-# auto-git-sync
+# Auto Git Sync
 
-A simple tool that automatically creates GitHub repositories and syncs changes.
+A professional Git auto-sync tool with real-time file monitoring and colored status output.
+
+## Features
+
+- 🚀 Automatic GitHub repository creation
+- 🔄 Real-time file monitoring
+- 🎨 Colored status output
+- 📊 Detailed change tracking
+- 🔒 Secure token-based authentication
+- ⚡ Fast and efficient syncing
 
 ## Setup
 
@@ -38,29 +47,37 @@ Simply run in any directory:
 
 The tool will:
 - Initialize Git if needed
-- Create a GitHub repository using the directory name
-- Set up remote automatically
-- Force push all existing files (overwrites any remote content)
-- Monitor for changes
-- Auto-commit changes every 2 seconds
-- Push to GitHub automatically
+- Create GitHub repository automatically
+- Set up remote with proper authentication
+- Monitor for file changes with status display:
+  - 🟢 Added files (green)
+  - 🔵 Modified files (blue)
+  - 🟡 Renamed files (yellow)
+  - 🔴 Deleted files (red)
+- Auto-commit and push changes
 
-Note: The initial force push ensures your local files are exactly mirrored on GitHub, regardless of any existing content in the repository.
+## Example Output
+
+```
+12:34:56 STARTUP Auto Git Sync
+12:34:56 STARTUP Monitoring directory: /path/to/project
+12:34:56 STARTUP Press Ctrl+C to stop
+
+12:34:57 + added    new_file.txt
+12:34:58 ~ modified config.json
+12:34:59 → renamed  old.txt → new.txt
+12:35:00 - deleted  temp.log
+
+12:35:01 GIT Creating commit...
+12:35:02 SUCCESS Changes pushed successfully
+```
 
 Press Ctrl+C to stop monitoring.
 
-## Example
+## Notes
 
-```bash
-$ mkdir my-project
-$ cd my-project
-$ touch README.md
-$ ../auto-git-sync/target/debug/auto-git-sync
-Initializing Git repository...
-Setting up GitHub repository...
-Performing initial force push...
-Monitoring directory: /path/to/my-project
-Auto-sync started. Press Ctrl+C to stop.
-```
-
-Your project will be available at `https://github.com/YourUsername/my-project` with all local files pushed to the main branch.
+- Initial setup creates a private GitHub repository
+- Files are committed automatically when changes are detected
+- Rename operations are handled properly
+- Colored output for better visibility
+- Timestamps for all operations
