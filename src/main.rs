@@ -216,7 +216,6 @@ async fn main() -> Result<()> {
     let mut last_sync = Instant::now();
     let sync_interval = Duration::from_secs(2);
     let mut waiting_for_rename = false;
-    let mut last_created_file: Option<PathBuf> = None;
     let mut last_modified_file: Option<PathBuf> = None;
     let mut force_sync = false;
 
@@ -236,7 +235,6 @@ async fn main() -> Result<()> {
                                 logging::status_change(file_path, "added", Color::BrightGreen);
                                 force_sync = true;
                             } else {
-                                last_created_file = Some(file_path.clone());
                                 waiting_for_rename = true;
                             }
                         }
@@ -248,7 +246,6 @@ async fn main() -> Result<()> {
                                 logging::status_change(file_path, "added", Color::BrightGreen);
                                 force_sync = true;
                                 waiting_for_rename = false;
-                                last_created_file = None;
                             } else if !waiting_for_rename {
                                 logging::status_change(file_path, "renamed", Color::Yellow);
                             }
