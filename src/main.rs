@@ -13,11 +13,15 @@ mod config;
 mod logging;
 use config::Config;
 
-fn is_windows_temp_file(path: &PathBuf) -> bool {
+fn is_temp_file(path: &PathBuf) -> bool {
     let file_name = path.file_name()
         .and_then(|n| n.to_str())
         .unwrap_or("");
 
+    file_name.ends_with(".tmp") ||
+    file_name.ends_with(".TMP") ||
+    file_name.contains("~RF") ||  // Office temp files
+    file_name.starts_with("~") ||
     file_name == "New Text Document.txt" ||
     file_name == "New Microsoft Word Document.docx" ||
     file_name == "New Microsoft Excel Worksheet.xlsx" ||
@@ -29,11 +33,12 @@ fn should_ignore_file(path: &PathBuf) -> bool {
         .and_then(|n| n.to_str())
         .unwrap_or("");
 
-    // Ignore Git's internal files
+    // Ignore Git's internal files and temp files
     if file_name == "index.lock" || 
        file_name.starts_with(".git") ||
        file_name == ".DS_Store" ||
-       file_name == "Thumbs.db" {
+       file_name == "Thumbs.db" ||
+       is_temp_file(path) {
         return true;
     }
 
@@ -211,13 +216,12 @@ async fn main() -> Result<()> {
     let mut last_sync = Instant::now();
     let sync_interval = Duration::from_secs(2);
     let mut waiting_for_rename = false;
-    let mut last_created_file: Option<PathBuf> = None;
 
     // Main event loop
     loop {
         match rx.recv_timeout(Duration::from_millis(100)) {
             Ok(event) => {
-                // Skip Git's internal files
+                // Skip Git's internal files and temp files
                 if event.paths.iter().any(|p| should_ignore_file(p)) {
                     continue;
                 }
@@ -225,28 +229,18 @@ async fn main() -> Result<()> {
                 match event.kind {
                     EventKind::Create(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            if !is_windows_temp_file(file_path) {
-                                logging::status_change(file_path, "added", Color::BrightGreen);
-                            }
-                            last_created_file = Some(file_path.clone());
+                            logging::status_change(file_path, "added", Color::BrightGreen);
                             waiting_for_rename = true;
                         }
                         tokio::time::sleep(Duration::from_secs(1)).await;
                     },
                     EventKind::Modify(ModifyKind::Name(_)) => {
                         if let Some(file_path) = event.paths.get(1) {
-                            if let Some(old_path) = &last_created_file {
-                                if is_windows_temp_file(old_path) {
-                                    logging::status_change(file_path, "added", Color::BrightGreen);
-                                } else {
-                                    logging::status_change(file_path, "renamed", Color::Yellow);
-                                }
-                            } else {
+                            if !waiting_for_rename {
                                 logging::status_change(file_path, "renamed", Color::Yellow);
                             }
                         }
                         waiting_for_rename = false;
-                        last_created_file = None;
                         if last_sync.elapsed() >= sync_interval {
                             sync_changes(&path).await?;
                             last_sync = Instant::now();
@@ -254,9 +248,7 @@ async fn main() -> Result<()> {
                     },
                     EventKind::Remove(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            if !is_windows_temp_file(file_path) {
-                                logging::status_change(file_path, "deleted", Color::Red);
-                            }
+                            logging::status_change(file_path, "deleted", Color::Red);
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
                             sync_changes(&path).await?;
@@ -265,7 +257,7 @@ async fn main() -> Result<()> {
                     },
                     EventKind::Modify(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            if !waiting_for_rename && !is_windows_temp_file(file_path) {
+                            if !waiting_for_rename {
                                 logging::status_change(file_path, "modified", Color::Blue);
                             }
                         }
