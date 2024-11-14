@@ -51,6 +51,16 @@ pub fn git_operation(operation: &str) {
     );
 }
 
+pub fn git_success(msg: &str) {
+    let time = Local::now().format("%H:%M:%S").to_string();
+    println!(
+        "{} {} {}",
+        time.dimmed(),
+        "GIT".cyan(),
+        format!("{} ✓", msg).green()
+    );
+}
+
 pub fn startup_message(path: &Path, username: &str, repo_name: &str) {
     let time = Local::now().format("%H:%M:%S").to_string();
     println!("\n{} {} Auto Git Sync", time.dimmed(), "STARTUP".bright_blue());
