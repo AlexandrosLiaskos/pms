@@ -212,11 +212,13 @@ async fn main() -> Result<()> {
     // Start watching the directory
     watcher.watch(path.as_ref(), RecursiveMode::Recursive)?;
 
-    // Keep track of last sync
+    // Keep track of last sync and modifications
     let mut last_sync = Instant::now();
     let sync_interval = Duration::from_secs(2);
     let mut waiting_for_rename = false;
     let mut last_created_file: Option<PathBuf> = None;
+    let mut last_modified_file: Option<PathBuf> = None;
+    let mut force_sync = false;
 
     // Main event loop
     loop {
@@ -232,6 +234,7 @@ async fn main() -> Result<()> {
                         if let Some(file_path) = event.paths.first() {
                             if !is_temp_file(file_path) {
                                 logging::status_change(file_path, "added", Color::BrightGreen);
+                                force_sync = true;
                             } else {
                                 last_created_file = Some(file_path.clone());
                                 waiting_for_rename = true;
@@ -243,15 +246,12 @@ async fn main() -> Result<()> {
                         if let Some(file_path) = event.paths.get(1) {
                             if waiting_for_rename && !is_temp_file(file_path) {
                                 logging::status_change(file_path, "added", Color::BrightGreen);
+                                force_sync = true;
                                 waiting_for_rename = false;
                                 last_created_file = None;
                             } else if !waiting_for_rename {
                                 logging::status_change(file_path, "renamed", Color::Yellow);
                             }
-                        }
-                        if last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
-                            last_sync = Instant::now();
                         }
                     },
                     EventKind::Remove(_) => {
@@ -260,28 +260,27 @@ async fn main() -> Result<()> {
                                 logging::status_change(file_path, "deleted", Color::Red);
                             }
                         }
-                        if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
-                            last_sync = Instant::now();
-                        }
                     },
                     EventKind::Modify(_) => {
                         if let Some(file_path) = event.paths.first() {
                             if !waiting_for_rename && !is_temp_file(file_path) {
-                                logging::status_change(file_path, "modified", Color::Blue);
+                                // Only show modify message if it's a different file
+                                if last_modified_file.as_ref() != Some(file_path) {
+                                    logging::status_change(file_path, "modified", Color::Blue);
+                                    last_modified_file = Some(file_path.clone());
+                                }
                             }
                         }
-                        if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
-                            last_sync = Instant::now();
-                        }
                     },
-                    _ => {
-                        if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
-                            last_sync = Instant::now();
-                        }
-                    }
+                    _ => {}
+                }
+
+                // Sync changes if needed
+                if force_sync || (!waiting_for_rename && last_sync.elapsed() >= sync_interval) {
+                    sync_changes(&path).await?;
+                    last_sync = Instant::now();
+                    force_sync = false;
+                    last_modified_file = None;
                 }
             },
             Err(_) => {
@@ -289,6 +288,7 @@ async fn main() -> Result<()> {
                 if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
                     sync_changes(&path).await?;
                     last_sync = Instant::now();
+                    last_modified_file = None;
                 }
             }
         }
