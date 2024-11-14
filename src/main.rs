@@ -232,7 +232,7 @@ async fn main() -> Result<()> {
                     EventKind::Create(_) => {
                         if let Some(file_path) = event.paths.first() {
                             if !is_temp_file(file_path) {
-                                logging::status_change(file_path, "added", Color::BrightGreen);
+                                logging::status_change(file_path, "added", Color::Yellow);
                                 force_sync = true;
                             } else {
                                 waiting_for_rename = true;
@@ -243,11 +243,11 @@ async fn main() -> Result<()> {
                     EventKind::Modify(ModifyKind::Name(_)) => {
                         if let Some(file_path) = event.paths.get(1) {
                             if waiting_for_rename && !is_temp_file(file_path) {
-                                logging::status_change(file_path, "added", Color::BrightGreen);
+                                logging::status_change(file_path, "added", Color::Yellow);
                                 force_sync = true;
                                 waiting_for_rename = false;
                             } else if !waiting_for_rename {
-                                logging::status_change(file_path, "renamed", Color::Yellow);
+                                logging::status_change(file_path, "renamed", Color::Blue);
                             }
                         }
                     },
@@ -338,7 +338,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             logging::error(&String::from_utf8_lossy(&output.stderr));
             return Err(anyhow::anyhow!("Failed to push changes"));
         } else {
-            logging::success("Changes pushed ✓");
+            logging::success("Changes pushed successfully ✓");
         }
     }
 
