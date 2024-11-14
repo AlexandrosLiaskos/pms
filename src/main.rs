@@ -13,6 +13,17 @@ mod config;
 mod logging;
 use config::Config;
 
+fn is_windows_temp_file(path: &PathBuf) -> bool {
+    let file_name = path.file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    file_name == "New Text Document.txt" ||
+    file_name == "New Microsoft Word Document.docx" ||
+    file_name == "New Microsoft Excel Worksheet.xlsx" ||
+    file_name.starts_with("New ")
+}
+
 fn should_ignore_file(path: &PathBuf) -> bool {
     let file_name = path.file_name()
         .and_then(|n| n.to_str())
@@ -214,18 +225,18 @@ async fn main() -> Result<()> {
                 match event.kind {
                     EventKind::Create(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            last_created_file = Some(file_path.clone());
-                            if !file_path.to_string_lossy().contains("New Text Document") {
+                            if !is_windows_temp_file(file_path) {
                                 logging::status_change(file_path, "added", Color::BrightGreen);
                             }
+                            last_created_file = Some(file_path.clone());
+                            waiting_for_rename = true;
                         }
-                        waiting_for_rename = true;
                         tokio::time::sleep(Duration::from_secs(1)).await;
                     },
                     EventKind::Modify(ModifyKind::Name(_)) => {
                         if let Some(file_path) = event.paths.get(1) {
                             if let Some(old_path) = &last_created_file {
-                                if old_path.to_string_lossy().contains("New Text Document") {
+                                if is_windows_temp_file(old_path) {
                                     logging::status_change(file_path, "added", Color::BrightGreen);
                                 } else {
                                     logging::status_change(file_path, "renamed", Color::Yellow);
@@ -243,7 +254,9 @@ async fn main() -> Result<()> {
                     },
                     EventKind::Remove(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            logging::status_change(file_path, "deleted", Color::Red);
+                            if !is_windows_temp_file(file_path) {
+                                logging::status_change(file_path, "deleted", Color::Red);
+                            }
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
                             sync_changes(&path).await?;
@@ -252,7 +265,7 @@ async fn main() -> Result<()> {
                     },
                     EventKind::Modify(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            if !waiting_for_rename {
+                            if !waiting_for_rename && !is_windows_temp_file(file_path) {
                                 logging::status_change(file_path, "modified", Color::Blue);
                             }
                         }
