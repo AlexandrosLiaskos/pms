@@ -10,7 +10,7 @@ use serde_json::json;
 mod config;
 use config::Config;
 
-async fn create_github_repository(token: &str, username: &str, name: &str) -> Result<String> {
+async fn create_github_repository(token: &str, username: &str, name: &str) -> Result<()> {
     let client = Client::new();
     let response = client
         .post("https://api.github.com/user/repos")
@@ -26,15 +26,12 @@ async fn create_github_repository(token: &str, username: &str, name: &str) -> Re
 
     if !response.status().is_success() {
         let error = response.text().await?;
-        if error.contains("already exists") {
-            // Repository exists, just return the URL
-            return Ok(format!("https://github.com/{}/{}", username, name));
+        if !error.contains("already exists") {
+            anyhow::bail!("Failed to create repository: {}", error);
         }
-        anyhow::bail!("Failed to create repository: {}", error);
     }
 
-    let repo = response.json::<serde_json::Value>().await?;
-    Ok(repo["html_url"].as_str().unwrap_or_default().to_string())
+    Ok(())
 }
 
 async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
@@ -70,9 +67,9 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .await
         .context("Failed to set git email")?;
 
-    // Create or get GitHub repository
+    // Create GitHub repository if it doesn't exist
     println!("Setting up GitHub repository...");
-    let repo_url = create_github_repository(&config.github_token, &config.git_username, repo_name).await?;
+    create_github_repository(&config.github_token, &config.git_username, repo_name).await?;
 
     // Set up remote
     Command::new("git")
