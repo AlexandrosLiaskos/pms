@@ -118,7 +118,7 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .context("Failed to add remote")?;
 
     // Force push all files initially
-    logging::git_operation("Performing initial force push...");
+    logging::git_operation("Initial commit...");
     Command::new("git")
         .args(["add", "."])
         .current_dir(path)
@@ -324,8 +324,6 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
         .context("Failed to check git status")?;
 
     if !status.stdout.is_empty() {
-        logging::git_operation("Creating commit...");
-        
         // Create commit
         Command::new("git")
             .args(["commit", "-m", "Auto-sync update"])
@@ -334,8 +332,6 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             .await
             .context("Failed to create commit")?;
 
-        logging::git_operation("Force pushing changes...");
-        
         // Reset main branch to current HEAD
         Command::new("git")
             .args(["branch", "-f", "main", "HEAD"])
@@ -356,7 +352,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
             logging::error(&String::from_utf8_lossy(&output.stderr));
             return Err(anyhow::anyhow!("Failed to push changes"));
         } else {
-            logging::success("Changes pushed successfully");
+            logging::git_success("Commit synced");
         }
     }
 
