@@ -13,6 +13,23 @@ mod config;
 mod logging;
 use config::Config;
 
+fn should_ignore_file(path: &PathBuf) -> bool {
+    let file_name = path.file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+
+    // Ignore Git's internal files
+    if file_name == "index.lock" || 
+       file_name.starts_with(".git") ||
+       file_name == ".DS_Store" ||
+       file_name == "Thumbs.db" {
+        return true;
+    }
+
+    // Check if path contains .git directory
+    path.components().any(|c| c.as_os_str() == ".git")
+}
+
 async fn create_github_repository(token: &str, name: &str) -> Result<()> {
     let client = Client::new();
     let response = client
@@ -185,6 +202,11 @@ async fn main() -> Result<()> {
     loop {
         match rx.recv_timeout(Duration::from_millis(100)) {
             Ok(event) => {
+                // Skip Git's internal files
+                if event.paths.iter().any(|p| should_ignore_file(p)) {
+                    continue;
+                }
+
                 match event.kind {
                     EventKind::Create(_) => {
                         if let Some(file_path) = event.paths.first() {
