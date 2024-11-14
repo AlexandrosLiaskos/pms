@@ -131,26 +131,20 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .output()
         .await?;
 
-    // Force push to main branch
-    Command::new("git")
-        .args(["push", "-f", "origin", "+HEAD:refs/heads/main"])
-        .current_dir(path)
-        .output()
-        .await
-        .context("Failed to push initial commit")?;
-
-    // Set upstream
+    // Set branch to main
     Command::new("git")
         .args(["branch", "-M", "main"])
         .current_dir(path)
         .output()
         .await?;
 
+    // Force push to main branch
     Command::new("git")
-        .args(["branch", "--set-upstream-to=origin/main", "main"])
+        .args(["push", "-f", "origin", "main"])
         .current_dir(path)
         .output()
-        .await?;
+        .await
+        .context("Failed to push initial commit")?;
 
     logging::success("Repository initialized successfully");
     Ok(())
@@ -342,9 +336,17 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
 
         logging::git_operation("Force pushing changes...");
         
-        // Force push changes with explicit ref
+        // Reset main branch to current HEAD
+        Command::new("git")
+            .args(["branch", "-f", "main", "HEAD"])
+            .current_dir(path)
+            .output()
+            .await
+            .context("Failed to reset main branch")?;
+
+        // Force push changes
         let output = Command::new("git")
-            .args(["push", "-f", "origin", "+HEAD:refs/heads/main"])
+            .args(["push", "-f", "origin", "main"])
             .current_dir(path)
             .output()
             .await
