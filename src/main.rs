@@ -49,6 +49,7 @@ async fn create_github_repository(token: &str, name: &str) -> Result<()> {
         if !error.contains("already exists") {
             anyhow::bail!("Failed to create repository: {}", error);
         }
+        logging::warning("Repository already exists, using existing one");
     }
 
     Ok(())
@@ -70,6 +71,8 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
             .output()
             .await
             .context("Failed to initialize Git repository")?;
+    } else {
+        logging::warning("Using existing Git repository");
     }
 
     // Set Git config
@@ -197,6 +200,7 @@ async fn main() -> Result<()> {
     let mut last_sync = Instant::now();
     let sync_interval = Duration::from_secs(2);
     let mut waiting_for_rename = false;
+    let mut sync_attempts = 0u32;
 
     // Main event loop
     loop {
@@ -221,7 +225,15 @@ async fn main() -> Result<()> {
                         }
                         waiting_for_rename = false;
                         if last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
+                            if let Err(e) = sync_changes(&path).await {
+                                sync_attempts += 1;
+                                if sync_attempts > 3 {
+                                    logging::warning("Multiple sync failures, will retry later");
+                                }
+                                logging::error(&e.to_string());
+                            } else {
+                                sync_attempts = 0;
+                            }
                             last_sync = Instant::now();
                         }
                     },
@@ -230,7 +242,15 @@ async fn main() -> Result<()> {
                             logging::status_change(file_path, "deleted", Color::Red);
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
+                            if let Err(e) = sync_changes(&path).await {
+                                sync_attempts += 1;
+                                if sync_attempts > 3 {
+                                    logging::warning("Multiple sync failures, will retry later");
+                                }
+                                logging::error(&e.to_string());
+                            } else {
+                                sync_attempts = 0;
+                            }
                             last_sync = Instant::now();
                         }
                     },
@@ -239,13 +259,29 @@ async fn main() -> Result<()> {
                             logging::status_change(file_path, "modified", Color::Blue);
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
+                            if let Err(e) = sync_changes(&path).await {
+                                sync_attempts += 1;
+                                if sync_attempts > 3 {
+                                    logging::warning("Multiple sync failures, will retry later");
+                                }
+                                logging::error(&e.to_string());
+                            } else {
+                                sync_attempts = 0;
+                            }
                             last_sync = Instant::now();
                         }
                     },
                     _ => {
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            sync_changes(&path).await?;
+                            if let Err(e) = sync_changes(&path).await {
+                                sync_attempts += 1;
+                                if sync_attempts > 3 {
+                                    logging::warning("Multiple sync failures, will retry later");
+                                }
+                                logging::error(&e.to_string());
+                            } else {
+                                sync_attempts = 0;
+                            }
                             last_sync = Instant::now();
                         }
                     }
@@ -254,7 +290,15 @@ async fn main() -> Result<()> {
             Err(_) => {
                 // No events for 100ms
                 if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                    sync_changes(&path).await?;
+                    if let Err(e) = sync_changes(&path).await {
+                        sync_attempts += 1;
+                        if sync_attempts > 3 {
+                            logging::warning("Multiple sync failures, will retry later");
+                        }
+                        logging::error(&e.to_string());
+                    } else {
+                        sync_attempts = 0;
+                    }
                     last_sync = Instant::now();
                 }
             }
@@ -302,6 +346,7 @@ async fn sync_changes(path: &PathBuf) -> Result<()> {
 
         if !output.status.success() {
             logging::error(&String::from_utf8_lossy(&output.stderr));
+            return Err(anyhow::anyhow!("Failed to push changes"));
         } else {
             logging::success("Changes pushed successfully");
         }
