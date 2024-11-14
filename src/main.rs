@@ -22,8 +22,7 @@ fn should_ignore_file(path: &PathBuf) -> bool {
     if file_name == "index.lock" || 
        file_name.starts_with(".git") ||
        file_name == ".DS_Store" ||
-       file_name == "Thumbs.db" ||
-       file_name == "New Text Document.txt" {  // Skip Windows' initial file name
+       file_name == "Thumbs.db" {
         return true;
     }
 
@@ -201,7 +200,7 @@ async fn main() -> Result<()> {
     let mut last_sync = Instant::now();
     let sync_interval = Duration::from_secs(2);
     let mut waiting_for_rename = false;
-    let mut sync_attempts = 0u32;
+    let mut last_created_file: Option<PathBuf> = None;
 
     // Main event loop
     loop {
@@ -214,24 +213,31 @@ async fn main() -> Result<()> {
 
                 match event.kind {
                     EventKind::Create(_) => {
+                        if let Some(file_path) = event.paths.first() {
+                            last_created_file = Some(file_path.clone());
+                            if !file_path.to_string_lossy().contains("New Text Document") {
+                                logging::status_change(file_path, "added", Color::BrightGreen);
+                            }
+                        }
                         waiting_for_rename = true;
                         tokio::time::sleep(Duration::from_secs(1)).await;
                     },
                     EventKind::Modify(ModifyKind::Name(_)) => {
                         if let Some(file_path) = event.paths.get(1) {
-                            logging::status_change(file_path, "added", Color::BrightGreen);
+                            if let Some(old_path) = &last_created_file {
+                                if old_path.to_string_lossy().contains("New Text Document") {
+                                    logging::status_change(file_path, "added", Color::BrightGreen);
+                                } else {
+                                    logging::status_change(file_path, "renamed", Color::Yellow);
+                                }
+                            } else {
+                                logging::status_change(file_path, "renamed", Color::Yellow);
+                            }
                         }
                         waiting_for_rename = false;
+                        last_created_file = None;
                         if last_sync.elapsed() >= sync_interval {
-                            if let Err(e) = sync_changes(&path).await {
-                                sync_attempts += 1;
-                                if sync_attempts > 3 {
-                                    logging::warning("Multiple sync failures, will retry later");
-                                }
-                                logging::error(&e.to_string());
-                            } else {
-                                sync_attempts = 0;
-                            }
+                            sync_changes(&path).await?;
                             last_sync = Instant::now();
                         }
                     },
@@ -240,15 +246,7 @@ async fn main() -> Result<()> {
                             logging::status_change(file_path, "deleted", Color::Red);
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            if let Err(e) = sync_changes(&path).await {
-                                sync_attempts += 1;
-                                if sync_attempts > 3 {
-                                    logging::warning("Multiple sync failures, will retry later");
-                                }
-                                logging::error(&e.to_string());
-                            } else {
-                                sync_attempts = 0;
-                            }
+                            sync_changes(&path).await?;
                             last_sync = Instant::now();
                         }
                     },
@@ -259,29 +257,13 @@ async fn main() -> Result<()> {
                             }
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            if let Err(e) = sync_changes(&path).await {
-                                sync_attempts += 1;
-                                if sync_attempts > 3 {
-                                    logging::warning("Multiple sync failures, will retry later");
-                                }
-                                logging::error(&e.to_string());
-                            } else {
-                                sync_attempts = 0;
-                            }
+                            sync_changes(&path).await?;
                             last_sync = Instant::now();
                         }
                     },
                     _ => {
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                            if let Err(e) = sync_changes(&path).await {
-                                sync_attempts += 1;
-                                if sync_attempts > 3 {
-                                    logging::warning("Multiple sync failures, will retry later");
-                                }
-                                logging::error(&e.to_string());
-                            } else {
-                                sync_attempts = 0;
-                            }
+                            sync_changes(&path).await?;
                             last_sync = Instant::now();
                         }
                     }
@@ -290,15 +272,7 @@ async fn main() -> Result<()> {
             Err(_) => {
                 // No events for 100ms
                 if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                    if let Err(e) = sync_changes(&path).await {
-                        sync_attempts += 1;
-                        if sync_attempts > 3 {
-                            logging::warning("Multiple sync failures, will retry later");
-                        }
-                        logging::error(&e.to_string());
-                    } else {
-                        sync_attempts = 0;
-                    }
+                    sync_changes(&path).await?;
                     last_sync = Instant::now();
                 }
             }
