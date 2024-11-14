@@ -4,12 +4,47 @@ use std::path::PathBuf;
 use std::sync::mpsc::channel;
 use std::time::{Duration, Instant};
 use tokio::process::Command;
+use reqwest::Client;
+use serde_json::json;
 
 mod config;
 use config::Config;
 
+async fn create_github_repository(token: &str, name: &str) -> Result<String> {
+    let client = Client::new();
+    let response = client
+        .post("https://api.github.com/user/repos")
+        .header("Authorization", format!("Bearer {}", token))
+        .header("User-Agent", "auto-git-sync")
+        .json(&json!({
+            "name": name,
+            "private": true,
+            "auto_init": false,
+        }))
+        .send()
+        .await?;
+
+    if !response.status().is_success() {
+        let error = response.text().await?;
+        if error.contains("already exists") {
+            // Repository exists, just return the URL
+            return Ok(format!("https://github.com/{}/{}", token, name));
+        }
+        anyhow::bail!("Failed to create repository: {}", error);
+    }
+
+    let repo = response.json::<serde_json::Value>().await?;
+    Ok(repo["html_url"].as_str().unwrap_or_default().to_string())
+}
+
 async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
-    // Check if Git is initialized
+    // Get repository name from directory name
+    let repo_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| anyhow::anyhow!("Invalid directory name"))?;
+
+    // Initialize Git if needed
     if !path.join(".git").exists() {
         println!("Initializing Git repository...");
         Command::new("git")
@@ -35,64 +70,56 @@ async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
         .await
         .context("Failed to set git email")?;
 
-    // Check if remote exists
-    let remote_exists = Command::new("git")
-        .args(["remote"])
+    // Create or get GitHub repository
+    println!("Setting up GitHub repository...");
+    let repo_url = create_github_repository(&config.github_token, repo_name).await?;
+
+    // Set up remote
+    Command::new("git")
+        .args(["remote", "remove", "origin"])
         .current_dir(path)
         .output()
-        .await?
-        .stdout;
+        .await
+        .ok(); // Ignore error if remote doesn't exist
 
-    if !String::from_utf8_lossy(&remote_exists).contains("origin") {
-        println!("Please enter your GitHub repository URL (e.g., https://github.com/username/repo):");
-        let mut url = String::new();
-        std::io::stdin().read_line(&mut url)?;
-        let url = url.trim();
+    let remote_url = format!(
+        "https://{}@{}",
+        config.github_token,
+        repo_url.trim_start_matches("https://")
+    );
 
-        if !url.starts_with("https://github.com") {
-            anyhow::bail!("Invalid GitHub URL. Must start with https://github.com");
-        }
+    Command::new("git")
+        .args(["remote", "add", "origin", &remote_url])
+        .current_dir(path)
+        .output()
+        .await
+        .context("Failed to add remote")?;
 
-        // Add remote with token
-        let remote_url = format!(
-            "https://{}@{}",
-            config.github_token,
-            url.trim_start_matches("https://")
-        );
+    // Create initial commit if needed
+    let status = Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(path)
+        .output()
+        .await?;
 
+    if !status.stdout.is_empty() {
         Command::new("git")
-            .args(["remote", "add", "origin", &remote_url])
-            .current_dir(path)
-            .output()
-            .await
-            .context("Failed to add remote")?;
-
-        // Create initial commit if needed
-        let status = Command::new("git")
-            .args(["status", "--porcelain"])
+            .args(["add", "."])
             .current_dir(path)
             .output()
             .await?;
 
-        if !status.stdout.is_empty() {
-            Command::new("git")
-                .args(["add", "."])
-                .current_dir(path)
-                .output()
-                .await?;
+        Command::new("git")
+            .args(["commit", "-m", "Initial commit"])
+            .current_dir(path)
+            .output()
+            .await?;
 
-            Command::new("git")
-                .args(["commit", "-m", "Initial commit"])
-                .current_dir(path)
-                .output()
-                .await?;
-
-            Command::new("git")
-                .args(["push", "-u", "origin", "main"])
-                .current_dir(path)
-                .output()
-                .await?;
-        }
+        Command::new("git")
+            .args(["push", "-u", "origin", "main"])
+            .current_dir(path)
+            .output()
+            .await?;
     }
 
     Ok(())
