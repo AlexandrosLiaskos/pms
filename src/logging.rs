@@ -51,13 +51,18 @@ pub fn git_operation(operation: &str) {
     );
 }
 
-pub fn startup_message(path: &Path) {
+pub fn startup_message(path: &Path, username: &str, repo_name: &str) {
     let time = Local::now().format("%H:%M:%S").to_string();
     println!("\n{} {} Auto Git Sync", time.dimmed(), "STARTUP".bright_blue());
     println!("{} {} Monitoring directory: {}", 
         time.dimmed(),
         "STARTUP".bright_blue(),
         path.display().to_string().cyan()
+    );
+    println!("{} {} Repository: {}", 
+        time.dimmed(),
+        "STARTUP".bright_blue(),
+        format!("https://github.com/{}/{}", username, repo_name).cyan()
     );
     println!("{} {} Press Ctrl+C to stop\n", 
         time.dimmed(),
