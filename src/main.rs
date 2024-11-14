@@ -25,6 +25,7 @@ fn is_temp_file(path: &PathBuf) -> bool {
     file_name == "New Text Document.txt" ||
     file_name == "New Microsoft Word Document.docx" ||
     file_name == "New Microsoft Excel Worksheet.xlsx" ||
+    file_name == "New Microsoft PowerPoint Presentation.pptx" ||
     file_name.starts_with("New ")
 }
 
@@ -37,8 +38,7 @@ fn should_ignore_file(path: &PathBuf) -> bool {
     if file_name == "index.lock" || 
        file_name.starts_with(".git") ||
        file_name == ".DS_Store" ||
-       file_name == "Thumbs.db" ||
-       is_temp_file(path) {
+       file_name == "Thumbs.db" {
         return true;
     }
 
@@ -216,12 +216,13 @@ async fn main() -> Result<()> {
     let mut last_sync = Instant::now();
     let sync_interval = Duration::from_secs(2);
     let mut waiting_for_rename = false;
+    let mut last_created_file: Option<PathBuf> = None;
 
     // Main event loop
     loop {
         match rx.recv_timeout(Duration::from_millis(100)) {
             Ok(event) => {
-                // Skip Git's internal files and temp files
+                // Skip Git's internal files
                 if event.paths.iter().any(|p| should_ignore_file(p)) {
                     continue;
                 }
@@ -229,18 +230,25 @@ async fn main() -> Result<()> {
                 match event.kind {
                     EventKind::Create(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            logging::status_change(file_path, "added", Color::BrightGreen);
-                            waiting_for_rename = true;
+                            if !is_temp_file(file_path) {
+                                logging::status_change(file_path, "added", Color::BrightGreen);
+                            } else {
+                                last_created_file = Some(file_path.clone());
+                                waiting_for_rename = true;
+                            }
                         }
                         tokio::time::sleep(Duration::from_secs(1)).await;
                     },
                     EventKind::Modify(ModifyKind::Name(_)) => {
                         if let Some(file_path) = event.paths.get(1) {
-                            if !waiting_for_rename {
+                            if waiting_for_rename && !is_temp_file(file_path) {
+                                logging::status_change(file_path, "added", Color::BrightGreen);
+                                waiting_for_rename = false;
+                                last_created_file = None;
+                            } else if !waiting_for_rename {
                                 logging::status_change(file_path, "renamed", Color::Yellow);
                             }
                         }
-                        waiting_for_rename = false;
                         if last_sync.elapsed() >= sync_interval {
                             sync_changes(&path).await?;
                             last_sync = Instant::now();
@@ -248,7 +256,9 @@ async fn main() -> Result<()> {
                     },
                     EventKind::Remove(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            logging::status_change(file_path, "deleted", Color::Red);
+                            if !is_temp_file(file_path) {
+                                logging::status_change(file_path, "deleted", Color::Red);
+                            }
                         }
                         if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
                             sync_changes(&path).await?;
@@ -257,7 +267,7 @@ async fn main() -> Result<()> {
                     },
                     EventKind::Modify(_) => {
                         if let Some(file_path) = event.paths.first() {
-                            if !waiting_for_rename {
+                            if !waiting_for_rename && !is_temp_file(file_path) {
                                 logging::status_change(file_path, "modified", Color::Blue);
                             }
                         }
