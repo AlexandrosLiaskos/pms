@@ -23,6 +23,12 @@ PMS is a file monitoring system with integrated Git version control. It automati
 3. **GitHub Token**
    - Generate a Personal Access Token at https://github.com/settings/tokens
 
+### Platforms 
+
+- Linux
+- MacOS 
+- Windows (WSL)
+
 ### Building from Source
 
 ```bash
