@@ -53,7 +53,7 @@ pms /path/to/your/project
 
 Here's what you'll see when running PMS:
 
-![Terminal output showing compilation and monitoring](terminal_output.png)
+![1](terminal_output.png)
 
 The system provides real-time feedback with colored indicators:
 
