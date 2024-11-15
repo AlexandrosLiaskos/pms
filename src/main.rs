@@ -247,7 +247,7 @@ async fn main() -> Result<()> {
                                 force_sync = true;
                                 waiting_for_rename = false;
                             } else if !waiting_for_rename {
-                                logging::status_change(file_path, "renamed", Color::Blue);
+                                logging::status_change(file_path, "renamed", Color::BrightBlue);
                             }
                         }
                     },
