@@ -53,7 +53,7 @@ pms /path/to/your/project
 
 Here's what you'll see when running PMS:
 
-![alt text](image-1.png)
+![alt text](image.png)
 
 The system provides real-time feedback with colored indicators:
 
