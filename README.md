@@ -1,6 +1,6 @@
-# PMOS (Project Management and Organization System)
+# PMS (Project Management System)
 
-PMOS is a lightweight project management system that automatically handles Git synchronization and project organization. It runs silently in the background, watching your project files and automatically syncing changes to GitHub.
+PMS is a comprehensive project management system with integrated Git version control. It helps you organize and track your projects while automatically handling Git synchronization in the background.
 
 ## System Requirements
 
@@ -11,22 +11,24 @@ The system is cross-platform compatible and works on:
 
 ## Current Features (Alpha v0.1.0)
 
-- **Automated Git Synchronization**
-  - Real-time file system monitoring with detailed event logging
+- **Project Management**
+  - Project organization and tracking
+  - Task management and monitoring
+  - Project status tracking
+  - Resource allocation tracking
+  - Project timeline management
+  - Activity logging and reporting
+  - Cross-platform compatibility
+  - Real-time project updates
+
+- **Git Integration**
+  - Automated Git synchronization
+  - Real-time file system monitoring
   - Automatic commits with meaningful messages
-  - Automatic force pushing to GitHub
-  - Smart change detection with configurable sync intervals (default: 50ms)
-  - Continuous background monitoring until explicitly stopped
-  - Reliable process management with comprehensive logging and error tracking
-  - Immediate feedback on file system events and sync operations
-  - Detailed activity logging for debugging and monitoring
-  - Robust error handling and recovery
-  - Automatic directory creation and management
-  - Persistent file monitoring across sessions
-  - Structured logging with JSON output
-  - Real-time event tracking and processing
-  - Cross-platform logging system
-  - Comprehensive JSON-formatted logs
+  - Automatic pushing to GitHub
+  - Smart change detection
+  - Continuous background monitoring
+  - Detailed activity logging
 
 - **Process Management**
   - Clean process management with proper cleanup
@@ -41,12 +43,12 @@ The system is cross-platform compatible and works on:
 
 ## Installation
 
-Currently, PMOS needs to be built from source:
+Currently, PMS needs to be built from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pmos.git
-cd pmos
+git clone https://github.com/yourusername/pms.git
+cd pms
 
 # Build and install
 cargo install --path .
@@ -55,8 +57,8 @@ cargo install --path .
 For Windows users:
 ```powershell
 # Using PowerShell
-git clone https://github.com/yourusername/pmos.git
-cd pmos
+git clone https://github.com/yourusername/pms.git
+cd pms
 cargo install --path .
 ```
 
@@ -69,45 +71,45 @@ cd your-project
 cd path\to\your-project
 ```
 
-2. Initialize PMOS in your project:
+2. Initialize PMS in your project:
 ```bash
-pmos init
+pms init
 ```
 
-3. Start monitoring (runs in background):
+3. Start project management and monitoring:
 ```bash
-pmos start
+pms start
 ```
-This will start continuous monitoring that persists until explicitly stopped. All changes are automatically committed and force-pushed to the remote repository.
+This will start continuous project monitoring and management that persists until explicitly stopped.
 
-4. Check monitoring status:
+4. Check project status:
 ```bash
-pmos status
+pms status
 ```
 
 5. Stop monitoring when needed:
 ```bash
-pmos stop
+pms stop
 ```
 
 ## Project Structure
 
-PMOS creates a `.pmos` directory in your project with the following structure:
+PMS creates a `.pms` directory in your project with the following structure:
 
 ```
-.pmos/
-├── pmos.log      # Activity and error logs (JSON formatted)
+.pms/
+├── pms.log       # Activity and error logs (JSON formatted)
 ├── monitor_active # Indicates active monitoring status
 └── config.toml   # Project configuration
 ```
 
 ## Available Commands
 
-- `pmos init [--name <project-name>]`: Initialize PMOS in the current directory
-- `pmos login`: Authenticate with GitHub
-- `pmos start`: Start continuous project monitoring (runs until stopped)
-- `pmos stop`: Stop project monitoring
-- `pmos status`: Show project status and monitoring state
+- `pms init [--name <project-name>]`: Initialize PMS in the current directory
+- `pms login`: Authenticate with GitHub
+- `pms start`: Start project monitoring and management
+- `pms stop`: Stop project monitoring
+- `pms status`: Show project status and monitoring state
 
 ## Platform-Specific Notes
 
@@ -115,17 +117,19 @@ PMOS creates a `.pmos` directory in your project with the following structure:
 - Uses Windows-native file system events
 - Supports both cmd.exe and PowerShell
 - Works in WSL (Windows Subsystem for Linux)
-- Config stored in `%APPDATA%\pmos`
+- Config stored in `%APPDATA%\pms`
 
 ### Linux/macOS
 - Uses inotify/FSEvents for file monitoring
-- Config stored in `~/.config/pmos`
+- Config stored in `~/.config/pms`
 - Full terminal support
 
 ## Current Limitations
 
 As this is an alpha release, please note:
 
+- Basic project management features
+- Simple task tracking
 - Basic authentication flow (GitHub OAuth)
 - Simple commit message generation
 - Fixed sync interval (2 seconds)
@@ -134,21 +138,22 @@ As this is an alpha release, please note:
 
 ## Roadmap
 
-- [ ] Advanced Windows integration
-- [ ] Configurable sync intervals
-- [ ] Custom commit message templates
-- [ ] Advanced project statistics
-- [ ] Multiple remote support
-- [ ] Conflict resolution
+- [ ] Advanced project tracking
+- [ ] Task dependencies and critical path
+- [ ] Resource allocation optimization
+- [ ] Team collaboration features
+- [ ] Project timeline visualization
+- [ ] Custom workflow templates
+- [ ] Advanced reporting
 - [ ] Web dashboard
 - [ ] VSCode extension
-- [ ] Team collaboration features
-- [ ] Project timeline tracking
-- [ ] Resource management
+- [ ] Multiple remote support
+- [ ] Conflict resolution
+- [ ] Project analytics
 
 ## Contributing
 
-PMOS is in active development and contributions are welcome! Here's how you can help:
+PMS is in active development and contributions are welcome! Here's how you can help:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -180,4 +185,4 @@ As this is an alpha release, please:
 
 ## Acknowledgments
 
-PMOS is inspired by various project management and version control tools, aiming to combine their best features into a seamless, automated experience.
+PMS is inspired by various project management and version control tools, aiming to combine their best features into a seamless, automated experience.
