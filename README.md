@@ -1,6 +1,6 @@
 # PMOS (Project Management and Organization System)
 
-PMOS is a lightweight project management system that automatically handles Git synchronization and project organization. It runs silently in the background, watching your project files and automatically syncing changes to GitHub.
+PMOS is a lightweight project management system that automatically handles Git synchronization and project organization. It runs silently, watching your project files and automatically syncing changes to GitHub.
 
 ## System Requirements
 
