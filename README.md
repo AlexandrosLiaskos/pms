@@ -10,20 +10,18 @@ PMS is a file monitoring system with integrated Git version control. It automati
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    source $HOME/.cargo/env
-   rustc --version  # Must be 1.56 or later
+   rustc --version  
    ```
 
 2. **Git Setup**
    ```bash
-   git --version  # Must be 2.0 or later
+   git --version  
    git config --global user.name "Your Name"
    git config --global user.email "your.email@example.com"
    ```
 
 3. **GitHub Token**
    - Generate a Personal Access Token at https://github.com/settings/tokens
-   - Token must start with `ghp_` or `github_pat_`
-   - Required scopes: `repo`, `workflow`
 
 ### Building from Source
 
