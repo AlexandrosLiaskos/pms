@@ -1,14 +1,13 @@
 # PMOS (Project Management and Organization System)
 
-PMOS is a lightweight project management system that automatically handles Git synchronization and project organization. It runs silently, watching your project files and automatically syncing changes to GitHub.
+PMOS is a lightweight project management system that automatically handles Git synchronization and project organization. It runs silently in the background, watching your project files and automatically syncing changes to GitHub.
 
 ## System Requirements
 
-**Important Note**: This alpha release is compatible with Unix-based systems only:
-- Linux (primary platform)
-- macOS (Unix-based)
-
-Windows support is planned for future releases.
+The system is cross-platform compatible and works on:
+- Linux (native)
+- Windows (native and WSL)
+- macOS
 
 ## Current Features (Alpha v0.1.0)
 
@@ -18,7 +17,7 @@ Windows support is planned for future releases.
   - Automatic force pushing to GitHub
   - Smart change detection with configurable sync intervals (default: 50ms)
   - Continuous background monitoring until explicitly stopped
-  - Reliable daemon process with comprehensive logging and error tracking
+  - Reliable process management with comprehensive logging and error tracking
   - Immediate feedback on file system events and sync operations
   - Detailed activity logging for debugging and monitoring
   - Robust error handling and recovery
@@ -26,14 +25,13 @@ Windows support is planned for future releases.
   - Persistent file monitoring across sessions
   - Structured logging with JSON output
   - Real-time event tracking and processing
-  - Daemon-aware logging system
+  - Cross-platform logging system
   - Comprehensive JSON-formatted logs
 
-- **Background Process Management**
-  - Runs as a daemon process
-  - Persistent monitoring after `pmos start`
+- **Process Management**
   - Clean process management with proper cleanup
-  - Reliable PID file handling
+  - Cross-platform signal handling
+  - Reliable state management
 
 - **GitHub Integration**
   - OAuth-based authentication
@@ -54,11 +52,21 @@ cd pmos
 cargo install --path .
 ```
 
+For Windows users:
+```powershell
+# Using PowerShell
+git clone https://github.com/yourusername/pmos.git
+cd pmos
+cargo install --path .
+```
+
 ## Quick Start
 
 1. Navigate to your project directory:
 ```bash
 cd your-project
+# or on Windows:
+cd path\to\your-project
 ```
 
 2. Initialize PMOS in your project:
@@ -88,7 +96,6 @@ PMOS creates a `.pmos` directory in your project with the following structure:
 
 ```
 .pmos/
-├── pmos.pid      # Process ID file
 ├── pmos.log      # Activity and error logs (JSON formatted)
 ├── monitor_active # Indicates active monitoring status
 └── config.toml   # Project configuration
@@ -102,12 +109,23 @@ PMOS creates a `.pmos` directory in your project with the following structure:
 - `pmos stop`: Stop project monitoring
 - `pmos status`: Show project status and monitoring state
 
+## Platform-Specific Notes
+
+### Windows
+- Uses Windows-native file system events
+- Supports both cmd.exe and PowerShell
+- Works in WSL (Windows Subsystem for Linux)
+- Config stored in `%APPDATA%\pmos`
+
+### Linux/macOS
+- Uses inotify/FSEvents for file monitoring
+- Config stored in `~/.config/pmos`
+- Full terminal support
+
 ## Current Limitations
 
 As this is an alpha release, please note:
 
-- Unix/Linux systems only (Windows support planned)
-- Only supports Git/GitHub (no other VCS)
 - Basic authentication flow (GitHub OAuth)
 - Simple commit message generation
 - Fixed sync interval (2 seconds)
@@ -116,7 +134,7 @@ As this is an alpha release, please note:
 
 ## Roadmap
 
-- [ ] Windows support
+- [ ] Advanced Windows integration
 - [ ] Configurable sync intervals
 - [ ] Custom commit message templates
 - [ ] Advanced project statistics
@@ -140,7 +158,6 @@ PMOS is in active development and contributions are welcome! Here's how you can 
 
 ## Requirements
 
-- Unix-based operating system (Linux or macOS)
 - Rust 1.56 or later
 - Git installed and configured
 - GitHub account
