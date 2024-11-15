@@ -117,16 +117,6 @@ Common error messages and solutions:
    ```
    Solution: Check GitHub token permissions and network connection
 
-## Support
-
-When reporting issues, include:
-- Full error message
-- Log contents (`cat .pms/pms.log`)
-- OS version
-- Rust version (`rustc --version`)
-- Git version (`git --version`)
-- Steps to reproduce
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
