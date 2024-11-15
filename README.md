@@ -1,28 +1,6 @@
 # PMS (Project Management System) - Alpha v0.1.0
 
-PMS is a file monitoring system with integrated Git version control, built entirely in Rust. It leverages Rust's performance, safety, and concurrency features to provide reliable real-time file monitoring and Git synchronization.
-
-## Features (Alpha)
-
-- **High-Performance Rust Implementation**
-  - Zero-cost abstractions for file monitoring
-  - Safe concurrent operations
-  - Memory-safe token handling
-  - Efficient file system operations
-
-- **Core Functionality**
-  - Real-time file monitoring with intelligent debouncing
-  - Automatic Git synchronization
-  - GitHub repository management
-  - Clean shutdown with Ctrl+C support
-  - Colored status output
-
-- **Security Features**
-  - Secure token storage
-  - File path validation
-  - Input sanitization
-  - Permission checks
-  - Safe temporary file handling
+PMS is a a high performance Rust-based file monitoring system with integrated Git version control, built entirely in Rust. It leverages Rust's performance, safety, and concurrency features to provide reliable real-time file monitoring and Git synchronization.
 
 ## Installation
 
