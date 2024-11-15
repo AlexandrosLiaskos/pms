@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Auto Git Sync will be documented in this file.
+All notable changes to PMS (Project Management System) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Intelligent debouncing for file changes
 - Enhanced error messages with context
 - Better sync timing with configurable intervals
-- Initial release of Auto Git Sync
+- Initial release of PMS
+- Project management features
 - Real-time file monitoring and Git synchronization
 - Secure GitHub token handling
 - Colored status output for different operations
@@ -50,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Core functionality
+  - Project management system
   - File system monitoring
   - Git integration
   - GitHub repository management
@@ -76,5 +78,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Permission checking
 - Safe file operations
 
-[Unreleased]: https://github.com/yourusername/auto-git-sync/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourusername/auto-git-sync/releases/tag/v0.1.0
+[Unreleased]: https://github.com/yourusername/pms/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/yourusername/pms/releases/tag/v0.1.0
