@@ -30,7 +30,7 @@ PMS is a file monitoring system with integrated Git version control. It automati
 git clone https://github.com/AlexandrosLiaskos/pms.git
 cd pms
 ```
-```
+```bash
 # Build and install
 cargo build --release
 cargo install --path .
