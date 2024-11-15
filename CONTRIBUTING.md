@@ -1,6 +1,6 @@
-# Contributing to Auto Git Sync
+# Contributing to PMS (Project Management System)
 
-First off, thank you for considering contributing to Auto Git Sync! It's people like you that make Auto Git Sync such a great tool.
+First off, thank you for considering contributing to PMS! It's people like you that make PMS such a great tool.
 
 ## Code of Conduct
 
@@ -48,8 +48,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 2. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/auto-git-sync
-cd auto-git-sync
+git clone https://github.com/yourusername/pms
+cd pms
 ```
 
 3. Install dependencies:
@@ -67,7 +67,7 @@ cargo fmt
 ## Project Structure
 
 ```
-auto-git-sync/
+pms/
 ├── src/
 │   ├── main.rs          # Application entry point
 │   ├── config.rs        # Configuration handling
@@ -117,7 +117,7 @@ auto-git-sync/
 
 Example:
 ```
-Add file size limit for syncing
+Add file size limit for project files
 
 - Implement configurable file size limit
 - Add validation for file sizes
