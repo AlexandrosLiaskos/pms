@@ -53,7 +53,7 @@ pub fn git_operation(operation: &str) {
 
 pub fn startup_message(path: &Path, username: &str, repo_name: &str) {
     let time = Local::now().format("%H:%M:%S").to_string();
-    println!("\n{} {} Auto Git Sync", time.dimmed(), "STARTUP".bright_blue());
+    println!("\n{} {} Project Management System (PMS)", time.dimmed(), "STARTUP".bright_blue());
     println!("{} {} Monitoring directory: {}", 
         time.dimmed(),
         "STARTUP".bright_blue(),
