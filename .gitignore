@@ -1,1 +1,71 @@
-/target
+# Rust build artifacts
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Config files with sensitive data
+.env
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+*.toml
+!Cargo.toml
+
+# Debug logs
+*.log
+debug/
+npm-debug.log*
+
+# Test coverage
+coverage/
+*.profraw
+
+# Documentation builds
+/doc/
+/book/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Local development files
+/local/
+/dev/
+/notes/
+
+# Example config files
+config.example.toml
+
+# Release artifacts
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+*.exe
+*.msi
+
+# Test artifacts
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
