@@ -1,6 +1,6 @@
 # PMS (Project Management System)
 
-PMS is a comprehensive project management system with integrated Git version control. It provides real-time file monitoring and automatic Git synchronization with intelligent debouncing and secure GitHub integration.
+PMS is a file monitoring system with integrated Git version control. It automatically watches your project directory and synchronizes changes with GitHub in real-time.
 
 ## Installation
 
@@ -43,20 +43,12 @@ cargo install --path .
 
 1. Create the configuration directory:
    ```bash
-   # Linux/macOS
    mkdir -p ~/.config/pms
-
-   # Windows (PowerShell)
-   New-Item -ItemType Directory -Force -Path $env:APPDATA\pms
    ```
 
 2. Create and edit the configuration file:
    ```bash
-   # Linux/macOS
    nano ~/.config/pms/config.toml
-
-   # Windows (PowerShell)
-   notepad $env:APPDATA\pms\config.toml
    ```
 
 3. Add required configuration:
@@ -87,62 +79,44 @@ cargo install --path .
 
 ## Usage
 
-### 1. Initialize a Project
+The program monitors a specified directory and automatically syncs changes to GitHub:
 
 ```bash
-cd your-project-directory  # Must not be a system directory
-pms init [--name custom-name]
+# Start monitoring the current directory
+pms
+
+# Monitor a specific directory
+pms /path/to/your/project
 ```
 
-Expected output:
-```
-HH:MM:SS INIT Initializing Git repository
-HH:MM:SS SUCCESS Repository initialized successfully
-```
+The system will:
+1. Initialize a Git repository if needed
+2. Create a private GitHub repository
+3. Start monitoring file changes
+4. Automatically commit and push changes
 
-### 2. Start Monitoring
-
-```bash
-pms start
-```
-
-Expected output:
-```
-HH:MM:SS STARTUP Project Management System (PMS)
-HH:MM:SS STARTUP Monitoring directory: /path/to/your/project
-HH:MM:SS STARTUP Repository: https://github.com/username/project
-HH:MM:SS STARTUP Press Ctrl+C to stop
-```
-
-File status indicators:
+File status indicators in the terminal:
 - `+` Yellow: File added
 - `~` Blue: File modified
 - `→` Bright Blue: File renamed
 - `-` Red: File deleted
 
-### 3. Monitor Status
-
-```bash
-pms status
-```
-
-This will show:
-- Current monitoring status
-- Last sync time
-- Pending changes
-- Repository status
-
-### 4. Stop Monitoring
-
-Press `Ctrl+C` or run:
-```bash
-pms stop
-```
-
-The system will:
+To stop monitoring, press `Ctrl+C`. The system will:
 1. Sync any pending changes
 2. Clean up resources
 3. Exit gracefully
+
+## Project Structure
+
+After starting PMS:
+```
+your-project/
+├── .pms/
+│   ├── pms.log          # JSON-formatted logs
+│   ├── monitor_active   # Status indicator
+│   └── config.toml      # Project-specific settings
+└── ... your files ...
+```
 
 ## Troubleshooting
 
@@ -184,18 +158,6 @@ Logs include:
 - File changes
 - Git operations
 - Error details
-
-## Project Structure
-
-After initialization:
-```
-your-project/
-├── .pms/
-│   ├── pms.log          # JSON-formatted logs
-│   ├── monitor_active   # Status indicator
-│   └── config.toml      # Project-specific settings
-└── ... your files ...
-```
 
 ## Support
 
