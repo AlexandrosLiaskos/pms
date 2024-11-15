@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Clean shutdown with Ctrl+C support
+- Intelligent debouncing for file changes
+- Enhanced error messages with context
+- Better sync timing with configurable intervals
 - Initial release of Auto Git Sync
 - Real-time file monitoring and Git synchronization
 - Secure GitHub token handling
@@ -26,19 +30,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Temporary file handling
 
 ### Changed
-- Improved file event handling
-- Better Windows compatibility
-- Enhanced error messages
+- Improved file event handling with debouncing
+- Enhanced error messages with more context
 - Cleaner status output
+- Better sync timing control
+- Improved Windows compatibility
+- Better handling of concurrent changes
 
 ### Fixed
+- Ctrl+C handling for clean shutdown
+- Duplicate sync operations
 - Windows file creation handling
 - Duplicate modification messages
 - Token security issues
 - File rename detection
 - Temporary file handling
 
-## [0.1.0] - 2023-11-XX
+## [0.1.0] - 2024-02-XX
 
 ### Added
 - Core functionality

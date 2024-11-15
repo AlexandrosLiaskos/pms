@@ -7,7 +7,7 @@ use zeroize::Zeroize;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     config_path: PathBuf,
     
     #[serde(serialize_with = "serialize_secret", deserialize_with = "deserialize_secret")]
@@ -42,7 +42,7 @@ pub struct SecurityConfig {
 
 fn default_sync_interval() -> u64 { 2 }
 fn default_batch_size() -> usize { 10 }
-fn default_max_file_size() -> u64 { 100 * 1024 * 1024 } // 100MB
+fn default_max_file_size() -> u64 { 100 * 1024 * 1024 } 
 fn default_token_refresh_days() -> u32 { 90 }
 
 fn default_ignore_patterns() -> Vec<String> {
@@ -62,8 +62,8 @@ impl Config {
         
         if !config_path.exists() {
             return Err(AutoGitSyncError::ConfigError(
-                "Config file not found".to_string(),
-            ));
+                "Config file not found. Please create a config file at ~/.config/auto-git-sync/config.toml".to_string(),
+            ).into());
         }
 
         let content = fs::read_to_string(&config_path).map_err(|e| {
@@ -78,45 +78,6 @@ impl Config {
         config.validate()?;
 
         Ok(config)
-    }
-
-    pub fn save_example() -> Result<PathBuf> {
-        let config_path = Self::get_config_path()?;
-        
-        if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent).map_err(|e| {
-                AutoGitSyncError::ConfigError(format!("Failed to create config directory: {}", e))
-            })?;
-        }
-
-        let example = Config {
-            config_path: config_path.clone(),
-            github_token: Secret::new("your_github_token".to_string()),
-            git_username: "YourGitHubUsername".to_string(),
-            git_email: "your.email@example.com".to_string(),
-            sync_interval: default_sync_interval(),
-            batch_size: default_batch_size(),
-            security: SecurityConfig::default(),
-        };
-
-        let content = toml::to_string_pretty(&example).map_err(|e| {
-            AutoGitSyncError::ConfigError(format!("Failed to serialize config: {}", e))
-        })?;
-
-        fs::write(&config_path, content).map_err(|e| {
-            AutoGitSyncError::ConfigError(format!("Failed to write config: {}", e))
-        })?;
-
-        // Set secure permissions
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&config_path, fs::Permissions::from_mode(0o600)).map_err(|e| {
-                AutoGitSyncError::SecurityError(format!("Failed to set config permissions: {}", e))
-            })?;
-        }
-
-        Ok(config_path)
     }
 
     fn get_config_path() -> Result<PathBuf> {
@@ -134,13 +95,13 @@ impl Config {
         if self.sync_interval < 1 {
             return Err(AutoGitSyncError::InvalidConfig(
                 "Sync interval must be at least 1 second".to_string(),
-            ));
+            ).into());
         }
 
         if self.batch_size < 1 {
             return Err(AutoGitSyncError::InvalidConfig(
                 "Batch size must be at least 1".to_string(),
-            ));
+            ).into());
         }
 
         Ok(())

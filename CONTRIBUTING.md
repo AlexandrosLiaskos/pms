@@ -18,6 +18,7 @@ Before creating bug reports, please check the issue list as you might find out t
 * Describe the behavior you observed after following the steps
 * Explain which behavior you expected to see instead and why
 * Include any error messages or logs
+* Include your config file (with sensitive data removed)
 
 ### Suggesting Enhancements
 
@@ -36,6 +37,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 * Ensure the test suite passes
 * Make sure your code lints
 * Update the documentation
+* Test Ctrl+C handling if modifying signal-related code
 
 ## Development Setup
 
@@ -86,6 +88,15 @@ auto-git-sync/
 * Run `clippy` and fix any warnings
 * Write documentation for public APIs
 * Include unit tests for new functionality
+* Use proper error handling with anyhow::Context
+
+### File Handling
+
+* Implement proper debouncing for file events
+* Handle temporary files appropriately
+* Consider platform-specific issues
+* Test with various file types and sizes
+* Validate paths and permissions
 
 ### Security
 
@@ -94,6 +105,8 @@ auto-git-sync/
 * Validate all user inputs
 * Handle errors appropriately
 * Follow secure coding practices
+* Implement proper file permissions
+* Use secure defaults
 
 ### Commit Messages
 
@@ -127,6 +140,9 @@ cargo test test_name
 
 # Run with logging
 RUST_LOG=debug cargo test
+
+# Test signal handling
+cargo test -- --test-threads=1  # For Ctrl+C tests
 ```
 
 ### Writing Tests
@@ -135,6 +151,9 @@ RUST_LOG=debug cargo test
 * Include integration tests for new features
 * Test edge cases and error conditions
 * Mock external dependencies when appropriate
+* Test file system operations carefully
+* Include signal handling tests
+* Test configuration validation
 
 ## Documentation
 
@@ -142,6 +161,8 @@ RUST_LOG=debug cargo test
 * Document new features
 * Update API documentation
 * Include examples for new functionality
+* Document security considerations
+* Update CHANGELOG.md
 
 ## Release Process
 
@@ -149,8 +170,9 @@ RUST_LOG=debug cargo test
 2. Update CHANGELOG.md
 3. Create a new release branch
 4. Run full test suite
-5. Create GitHub release
-6. Publish to crates.io
+5. Test on multiple platforms
+6. Create GitHub release
+7. Publish to crates.io
 
 ## Questions?
 

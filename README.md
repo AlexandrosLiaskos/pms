@@ -7,47 +7,63 @@
 - 🚀 **Real-time Synchronization**: Automatically detects and syncs file changes
 - 🔒 **Secure**: Safe token handling and secure GitHub integration
 - 🎨 **Visual Feedback**: Clear, colored status indicators for all operations
-- 🛡️ **Smart Handling**: Intelligent file event processing and Windows compatibility
+- 🛡️ **Smart Handling**: Intelligent file event processing with debouncing
 - ⚡ **Efficient**: Minimal resource usage with smart batching of changes
+- 🎯 **Clean Exit**: Graceful shutdown with Ctrl+C
 
-## Installation
+## Quick Start
 
-### From Source
 ```bash
-# Clone the repository
+# Install from source
 git clone https://github.com/yourusername/auto-git-sync
 cd auto-git-sync
-
-# Build the project
 cargo build --release
 
-# The binary will be available at
+# Run for the first time to generate config
 ./target/release/auto-git-sync
+
+# Edit config with your GitHub credentials
+nano ~/.config/auto-git-sync/config.toml
+
+# Start monitoring a directory
+./target/release/auto-git-sync /path/to/directory
 ```
 
-### Security Setup
+## Configuration
 
-1. Generate a GitHub Personal Access Token:
-   - Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-   - Click "Generate new token (classic)"
-   - Select the "repo" scope only (minimum required permissions)
-   - Copy the generated token
+The config file is located at `~/.config/auto-git-sync/config.toml`:
 
-2. Configure the tool:
-   ```bash
-   # First run will create example config
-   ./auto-git-sync
+```toml
+# Required GitHub credentials
+github_token = "your_github_token"
+git_username = "YourGitHubUsername"
+git_email = "your.email@example.com"
 
-   # Edit the config file
-   nano ~/.config/auto-git-sync/config.toml
-   ```
+# Optional sync settings
+sync_interval = 2     # Sync interval in seconds (default: 2)
+batch_size = 10      # Maximum changes per commit (default: 10)
 
-3. Add your credentials:
-   ```toml
-   github_token = "your_token_here"
-   git_username = "YourGitHubUsername"
-   git_email = "your.email@example.com"
-   ```
+[security]
+# Files to ignore (default patterns shown)
+ignore_patterns = [
+    "*.env",
+    "*.key",
+    "*.pem",
+    "id_rsa",
+    "id_rsa.pub",
+    "*.log"
+]
+max_file_size = 104857600  # Maximum file size in bytes (100MB)
+allow_force_push = false   # Whether to allow force pushing
+token_refresh_days = 90    # Reminder to refresh token
+```
+
+### GitHub Token Setup
+
+1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Click "Generate new token (classic)"
+3. Select the "repo" scope only
+4. Copy the generated token to your config file
 
 ## Usage
 
@@ -57,97 +73,120 @@ auto-git-sync
 
 # Monitor specific directory
 auto-git-sync /path/to/directory
+
+# Stop monitoring
+Press Ctrl+C to exit cleanly
 ```
 
 ### Status Indicators
 
-The tool provides clear visual feedback for all operations:
+The tool provides clear visual feedback:
 
-- 🟡 `added` - New files (yellow)
-- 🔵 `modified` - Content changes (blue)
-- 🌟 `renamed` - File renames (bright blue)
-- 🔴 `deleted` - Removed files (red)
-- ✅ `SUCCESS` - Successful sync (green)
+- 🟡 `added` - New files
+- 🔵 `modified` - Content changes
+- 🌟 `renamed` - File renames
+- 🔴 `deleted` - Removed files
+- ✅ `SUCCESS` - Successful sync
 
-## Security Considerations
+## Real-World Examples
 
-1. **Token Security**:
-   - Store tokens securely in the config file
-   - Use minimum required permissions
-   - Regularly rotate tokens
-   - Never commit tokens to version control
+### Development Workflow
+```bash
+# Start monitoring your project
+cd ~/projects/my-webapp
+auto-git-sync &
 
-2. **File Safety**:
-   - Only monitors specified directory
-   - Ignores system and temporary files
-   - Respects .gitignore rules
-   - Safe handling of file operations
-
-3. **Network Security**:
-   - HTTPS connections only
-   - Secure GitHub API integration
-   - Token-based authentication
-   - No plain-text password storage
-
-## Advanced Usage
-
-### Custom Configuration
-
-You can customize the behavior by editing `~/.config/auto-git-sync/config.toml`:
-
-```toml
-[sync]
-interval = 2  # Sync interval in seconds
-batch_size = 10  # Maximum changes per commit
-
-[git]
-default_branch = "main"
-commit_message = "Auto-sync update"
-
-[security]
-ignore_patterns = [".env", "*.key"]
+# Continue development, changes auto-sync
+npm run dev
 ```
 
-### Integration Examples
+### Document Sync
+```bash
+# Sync your notes
+auto-git-sync ~/Documents/notes
 
-1. **Development Workflow**:
+# Sync multiple directories (in separate terminals)
+auto-git-sync ~/Documents/blog-posts
+auto-git-sync ~/Documents/research
+```
+
+### Team Collaboration
+```bash
+# Set up shared project sync
+cd ~/team-projects/shared-docs
+auto-git-sync
+
+# All team members' changes auto-sync to GitHub
+```
+
+## Security Features
+
+- 🔐 **Token Security**
+  - Secure storage in config file
+  - Automatic token validation
+  - Regular rotation reminders
+  - Permission scope validation
+
+- 🛡️ **File Safety**
+  - Smart file ignore patterns
+  - Temporary file detection
+  - Size limit enforcement
+  - .gitignore respect
+
+- 🔒 **Network Security**
+  - HTTPS only
+  - Token-based auth
+  - No plain-text storage
+  - Secure API integration
+
+## Advanced Features
+
+### Intelligent Change Detection
+- Debouncing to prevent rapid commits
+- Smart batching of related changes
+- Temporary file filtering
+- Rename operation detection
+
+### Performance Optimization
+- Minimal resource usage
+- Efficient file system monitoring
+- Smart caching of file states
+- Batch processing of changes
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Permission Denied**
    ```bash
-   # Start in project directory
-   cd my-project
-   auto-git-sync &
-   
-   # Continue working, changes auto-sync
+   # Fix config file permissions
+   chmod 600 ~/.config/auto-git-sync/config.toml
    ```
 
-2. **Document Sync**:
+2. **Token Invalid**
    ```bash
-   # Sync documents folder
-   auto-git-sync ~/Documents/notes
+   # Verify token has 'repo' scope
+   # Regenerate if needed
+   ```
+
+3. **Changes Not Syncing**
+   ```bash
+   # Check ignore patterns
+   # Verify file sizes
+   # Ensure proper permissions
    ```
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-1. Clone and setup:
-   ```bash
-   git clone https://github.com/yourusername/auto-git-sync
-   cd auto-git-sync
-   cargo build
-   ```
-
-2. Run tests:
-   ```bash
-   cargo test
-   cargo clippy
-   cargo fmt
-   ```
+We welcome contributions! See [Contributing Guidelines](CONTRIBUTING.md) for:
+- Code style guide
+- Pull request process
+- Development setup
+- Testing requirements
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 

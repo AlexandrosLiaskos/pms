@@ -1,20 +1,36 @@
+use anyhow::Context;
 use crate::config::Config;
 use crate::error::{AutoGitSyncError, Result};
 use secrecy::ExposeSecret;
 use std::path::PathBuf;
 use tokio::process::Command;
+use std::fs;
+use crate::logging;
 
 pub struct GitHandler {
     repo_path: PathBuf,
     config: Config,
+    verbose: bool,
 }
 
 impl GitHandler {
     pub fn new(repo_path: PathBuf, config: Config) -> Self {
-        Self { repo_path, config }
+        Self { 
+            repo_path, 
+            config,
+            verbose: false,  
+        }
+    }
+
+    fn log_git(&self, operation: &str) {
+        if self.verbose {
+            logging::git_operation(operation);
+        }
     }
 
     pub async fn init_repository(&self) -> Result<()> {
+        logging::init_message("Initializing Git repository");
+        
         // Get repository name
         let repo_name = self.repo_path
             .file_name()
@@ -25,17 +41,19 @@ impl GitHandler {
         if repo_name.is_empty() {
             return Err(AutoGitSyncError::InvalidPath(
                 "Repository name is empty after sanitization".to_string(),
-            ));
+            ).into());
         }
 
         // Initialize Git if needed
         if !self.repo_path.join(".git").exists() {
+            self.log_git("init");
             self.execute_git(&["init"])
                 .await
                 .context("Failed to initialize Git repository")?;
         }
 
         // Configure Git
+        self.log_git("config");
         self.execute_git(&["config", "user.name", &self.config.git_username])
             .await
             .context("Failed to set git username")?;
@@ -59,24 +77,38 @@ impl GitHandler {
             repo_name
         );
 
+        self.log_git("remote add");
         self.execute_git(&["remote", "add", "origin", &remote_url])
             .await
             .context("Failed to add remote")?;
 
+        // Create initial README if directory is empty
+        let readme_path = self.repo_path.join("README.md");
+        if !readme_path.exists() {
+            fs::write(&readme_path, format!("# {}\n\nAutomatically synced with auto-git-sync", repo_name))
+                .map_err(|e| AutoGitSyncError::GitInitError(format!("Failed to create README: {}", e)))?;
+        }
+
         // Initial commit and push
+        self.log_git("add");
         self.execute_git(&["add", "."]).await?;
         
+        self.log_git("commit");
         let _ = self.execute_git(&["commit", "-m", "Initial commit"])
             .await
             .context("Failed to create initial commit")?;
 
+        self.log_git("branch");
         self.execute_git(&["branch", "-M", "main"])
             .await?;
 
+        self.log_git("push");
         self.execute_git(&["push", "-f", "origin", "main"])
             .await
+            .map_err(|e| AutoGitSyncError::GitPushError(e.to_string()))
             .context("Failed to push initial commit")?;
 
+        logging::success("Repository initialized successfully");
         Ok(())
     }
 
@@ -98,16 +130,44 @@ impl GitHandler {
             .await
             .context("Failed to create commit")?;
 
-        // Reset main branch to current HEAD for clean history
-        self.execute_git(&["branch", "-f", "main", "HEAD"])
+        // Get current branch name
+        let current_branch = self.execute_git(&["rev-parse", "--abbrev-ref", "HEAD"])
             .await
-            .context("Failed to reset main branch")?;
+            .context("Failed to get current branch")?
+            .trim()
+            .to_string();
+
+        // If we're not on main branch, create/switch to it
+        if current_branch != "main" {
+            // Try to create main branch
+            let result = self.execute_git(&["branch", "main"]).await;
+            if result.is_err() {
+                // Branch might already exist, try to switch to it
+                self.execute_git(&["checkout", "main"])
+                    .await
+                    .context("Failed to switch to main branch")?;
+            }
+        }
+
+        // Get the latest commit hash
+        let commit_hash = self.execute_git(&["rev-parse", "HEAD"])
+            .await
+            .context("Failed to get commit hash")?
+            .trim()
+            .to_string();
+
+        // Reset main branch to this commit
+        self.execute_git(&["update-ref", "refs/heads/main", &commit_hash])
+            .await
+            .context("Failed to update main branch")?;
 
         // Force push changes
         self.execute_git(&["push", "-f", "origin", "main"])
             .await
+            .map_err(|e| AutoGitSyncError::GitPushError(e.to_string()))
             .context("Failed to push changes")?;
 
+        logging::success("Changes synced ✓");
         Ok(true)
     }
 
@@ -120,14 +180,17 @@ impl GitHandler {
             .map_err(|e| AutoGitSyncError::GitInitError(e.to_string()))?;
 
         if !output.status.success() {
-            let error = String::from_utf8_lossy(&output.stderr);
-            return Err(AutoGitSyncError::GitInitError(error.to_string()));
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let error = if stderr.is_empty() { stdout } else { stderr };
+            return Err(AutoGitSyncError::GitInitError(format!("Git command failed: {} ({})", error, args.join(" "))).into());
         }
 
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     }
 
     async fn create_github_repository(&self, name: &str) -> Result<()> {
+        self.log_git("create repository");
         let client = reqwest::Client::new();
         let response = client
             .post("https://api.github.com/user/repos")
@@ -143,7 +206,7 @@ impl GitHandler {
             }))
             .send()
             .await
-            .map_err(|e| AutoGitSyncError::GitHubApiError(e.to_string()))?;
+            .map_err(|e| AutoGitSyncError::NetworkError(e.to_string()))?;
 
         if !response.status().is_success() {
             let error = response
@@ -153,7 +216,8 @@ impl GitHandler {
             
             // Ignore if repository already exists
             if !error.contains("already exists") {
-                return Err(AutoGitSyncError::GitHubApiError(error));
+                logging::warning("Failed to create GitHub repository");
+                return Err(AutoGitSyncError::GitHubApiError(error).into());
             }
         }
 

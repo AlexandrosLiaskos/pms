@@ -13,7 +13,7 @@ Currently supported versions for security updates:
 We take security seriously at Auto Git Sync. If you discover a security vulnerability, please follow these steps:
 
 1. **DO NOT** open a public issue on GitHub
-2. Send an email to [your-security-email@example.com] with:
+2. Send an email to security@auto-git-sync.dev with:
    - A description of the vulnerability
    - Steps to reproduce
    - Potential impact
@@ -30,72 +30,82 @@ We take security seriously at Auto Git Sync. If you discover a security vulnerab
 When using Auto Git Sync:
 
 1. **GitHub Token Security**:
-   - Use tokens with minimal required permissions
-   - Regularly rotate your tokens
+   - Use tokens with minimal required permissions (only 'repo' scope needed)
+   - Regularly rotate your tokens (90-day reminder built-in)
    - Never share or expose your tokens
-   - Use environment variables when possible
+   - Store tokens only in the config file with proper permissions
 
 2. **File Security**:
    - Don't sync sensitive files
    - Use .gitignore for sensitive patterns
-   - Regularly audit synced files
+   - Use built-in ignore patterns for common sensitive files
    - Set appropriate file permissions
+   - Respect the configured file size limits
 
 3. **Configuration Security**:
-   - Keep config files secure
+   - Keep config file at `~/.config/auto-git-sync/config.toml`
+   - Set config file permissions to 600 (user read/write only)
    - Don't commit config files
-   - Use secure file permissions
    - Regularly update credentials
+   - Use all available security options in config
 
 4. **Network Security**:
-   - Use HTTPS only
+   - Use HTTPS only (enforced by default)
    - Verify SSL certificates
    - Use secure networks
    - Monitor network activity
+   - Rate limit API requests
 
 ## Known Security Measures
 
 Auto Git Sync implements several security measures:
 
 1. **Token Protection**:
-   - Secure token storage
-   - Memory wiping
-   - Permission validation
+   - Secure token storage with proper file permissions
+   - Memory wiping after use
+   - Permission validation on startup
    - Token masking in logs
+   - Automatic token validation
 
 2. **File Safety**:
-   - Path validation
+   - Path validation and sanitization
    - File permission checks
-   - Secure file handling
-   - Temporary file cleanup
+   - Secure file handling with debouncing
+   - Temporary file detection and filtering
+   - Maximum file size enforcement
 
 3. **Error Handling**:
-   - Secure error messages
-   - No sensitive data in logs
+   - Secure error messages (no sensitive data)
+   - Contextual error information
    - Proper exception handling
    - Fail-safe defaults
+   - Graceful shutdown handling
 
 4. **Configuration**:
-   - Secure config storage
-   - Permission restrictions
-   - Input validation
-   - Sanitization
+   - Secure config storage location
+   - Strict permission enforcement
+   - Input validation and sanitization
+   - Secure default values
+   - Configuration validation on load
 
 ## Security Updates
 
 - Security updates are released as patch versions
 - Critical updates are fast-tracked
-- All security fixes are documented
+- All security fixes are documented in CHANGELOG.md
 - Users are notified through GitHub releases
+- Automatic update checks (planned)
 
 ## Audit Logging
 
 Auto Git Sync provides audit logging for security-relevant events:
 
-- File operations
+- File operations (add, modify, delete, rename)
 - Authentication attempts
 - Configuration changes
 - Error conditions
+- Sync operations
+- Startup and shutdown events
 
 ## Secure Development
 
@@ -103,30 +113,42 @@ Our development process includes:
 
 1. **Code Review**:
    - Security-focused reviews
-   - Automated scanning
-   - Dependency audits
-   - Regular updates
+   - Automated scanning with clippy
+   - Regular dependency audits
+   - Continuous integration checks
 
 2. **Testing**:
    - Security test cases
-   - Penetration testing
-   - Fuzzing
-   - Boundary testing
+   - File operation tests
+   - Configuration validation tests
+   - Error handling tests
+   - Signal handling tests
 
 3. **Dependencies**:
    - Regular updates
-   - Security audits
-   - Minimal dependencies
-   - Version pinning
+   - Security audits with cargo audit
+   - Minimal dependency usage
+   - Version pinning in Cargo.toml
 
 4. **Documentation**:
-   - Security guidelines
-   - Best practices
+   - Security guidelines (this document)
+   - Best practices in README.md
    - Configuration guides
    - Update procedures
+   - Troubleshooting guides
 
 ## Contact
 
-Security-related questions: [your-security-email@example.com]
+Security-related questions: security@auto-git-sync.dev
 
 For non-security issues, please use GitHub issues.
+
+## Recent Security Improvements
+
+- Added proper Ctrl+C handling for clean shutdown
+- Improved file change debouncing
+- Enhanced error messages with context
+- Added file size limits
+- Improved temporary file detection
+- Added token refresh reminders
+- Enhanced permission checks

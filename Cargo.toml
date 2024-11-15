@@ -3,7 +3,7 @@ name = "auto-git-sync"
 version = "0.1.0"
 edition = "2021"
 authors = ["Your Name <your.email@example.com>"]
-description = "A secure, real-time Git synchronization tool that automatically commits and pushes your changes to GitHub"
+description = ""
 repository = "https://github.com/yourusername/auto-git-sync"
 license = "MIT"
 readme = "README.md"
@@ -11,45 +11,46 @@ keywords = ["git", "sync", "automation", "github", "backup"]
 categories = ["development-tools", "command-line-utilities"]
 
 [dependencies]
-notify = "6.1"           # File system monitoring
-tokio = { version = "1.0", features = ["full"] }  # Async runtime
-anyhow = "1.0"          # Error handling
-thiserror = "1.0"       # Error definitions
-serde = { version = "1.0", features = ["derive"] }  # Serialization
-serde_json = "1.0"      # JSON handling
-toml = "0.8"           # TOML config files
-dirs = "5.0"           # Finding config directory
-reqwest = { version = "0.11", features = ["json"] }  # HTTP client
-colored = "2.0"        # Colored terminal output
-chrono = "0.4"        # Time formatting
-log = "0.4"           # Logging traits
-env_logger = "0.10"   # Logging implementation
-secrecy = "0.8"       # Secure credential handling
-zeroize = "1.6"       # Secure memory wiping
-base64 = "0.21"       # Base64 encoding/decoding
-sha2 = "0.10"         # Cryptographic hashes
+notify = "6.1"           
+tokio = { version = "1.0", features = ["full"] }  
+anyhow = "1.0"        
+thiserror = "1.0"      
+serde = { version = "1.0", features = ["derive"] }  
+serde_json = "1.0"     
+toml = "0.8"          
+dirs = "5.0"           
+reqwest = { version = "0.11", features = ["json"] }  
+colored = "2.0"        
+chrono = "0.4"        
+log = "0.4"         
+env_logger = "0.10"   
+secrecy = "0.8"       
+zeroize = "1.6"       
+base64 = "0.21"     
+sha2 = "0.10"      
+ctrlc = "3.4"        
 
 [dev-dependencies]
-tempfile = "3.8"      # Temporary files for tests
-mockall = "0.11"      # Mocking for tests
-test-log = "0.2"      # Test logging
-tokio-test = "0.4"    # Async testing utilities
-assert_fs = "1.0"     # Filesystem assertions
-predicates = "3.0"    # Test predicates
+tempfile = "3.8"      
+mockall = "0.11"     
+test-log = "0.2"   
+tokio-test = "0.4"    
+assert_fs = "1.0"   
+predicates = "3.0"   
 
 [profile.release]
 # Optimizations
-lto = true            # Link-time optimization
-codegen-units = 1     # Optimize for size
-opt-level = 3         # Maximum optimization
-panic = 'abort'       # Remove panic unwinding
-strip = true          # Strip symbols
+lto = true            
+codegen-units = 1   
+opt-level = 3      
+panic = 'abort'      
+strip = true         
 
 # Security features
 [features]
 default = ["secure-token"]
-secure-token = []     # Enhanced token security
-audit = []           # Extra security auditing
+secure-token = []     
+audit = []           
 
 [package.metadata.docs.rs]
 all-features = true

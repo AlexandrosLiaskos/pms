@@ -40,7 +40,8 @@ pub enum AutoGitSyncError {
     SecurityError(String),
 }
 
-pub type Result<T> = std::result::Result<T, AutoGitSyncError>;
+// Use anyhow's Result type instead of std::result::Result
+pub type Result<T> = anyhow::Result<T>;
 
 // Security validation functions
 pub fn validate_path(path: &PathBuf) -> Result<()> {
@@ -48,7 +49,7 @@ pub fn validate_path(path: &PathBuf) -> Result<()> {
     if !path.exists() {
         return Err(AutoGitSyncError::InvalidPath(
             "Path does not exist".to_string(),
-        ));
+        ).into());
     }
 
     // Ensure we have read/write permissions
@@ -59,7 +60,7 @@ pub fn validate_path(path: &PathBuf) -> Result<()> {
     if !metadata.is_dir() {
         return Err(AutoGitSyncError::InvalidPath(
             "Path must be a directory".to_string(),
-        ));
+        ).into());
     }
 
     // Check for suspicious paths
@@ -72,7 +73,7 @@ pub fn validate_path(path: &PathBuf) -> Result<()> {
     if suspicious_paths.iter().any(|p| path_str.contains(p)) {
         return Err(AutoGitSyncError::SecurityError(
             "Cannot monitor system directories".to_string(),
-        ));
+        ).into());
     }
 
     Ok(())
@@ -83,20 +84,20 @@ pub fn validate_token(token: &str) -> Result<()> {
     if token.is_empty() {
         return Err(AutoGitSyncError::TokenError(
             "GitHub token cannot be empty".to_string(),
-        ));
+        ).into());
     }
 
     if token.len() < 40 {
         return Err(AutoGitSyncError::TokenError(
             "Invalid GitHub token format".to_string(),
-        ));
+        ).into());
     }
 
     // Check for common token prefixes
     if !token.starts_with("ghp_") && !token.starts_with("github_pat_") {
         return Err(AutoGitSyncError::TokenError(
             "Invalid GitHub token format: must start with 'ghp_' or 'github_pat_'".to_string(),
-        ));
+        ).into());
     }
 
     Ok(())
@@ -107,14 +108,14 @@ pub fn validate_git_config(username: &str, email: &str) -> Result<()> {
     if username.is_empty() {
         return Err(AutoGitSyncError::InvalidConfig(
             "Git username cannot be empty".to_string(),
-        ));
+        ).into());
     }
 
     // Basic email validation
     if !email.contains('@') || !email.contains('.') {
         return Err(AutoGitSyncError::InvalidConfig(
             "Invalid email format".to_string(),
-        ));
+        ).into());
     }
 
     Ok(())

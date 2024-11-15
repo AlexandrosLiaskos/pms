@@ -7,6 +7,8 @@ use notify::event::ModifyKind;
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver};
 use std::time::{Duration, Instant};
+use std::collections::HashSet;
+use tokio::time::sleep;
 
 pub struct FileWatcher {
     path: PathBuf,
@@ -16,8 +18,9 @@ pub struct FileWatcher {
     last_sync: Instant,
     sync_interval: Duration,
     waiting_for_rename: bool,
-    last_modified_file: Option<PathBuf>,
-    force_sync: bool,
+    changed_files: HashSet<PathBuf>,
+    last_event: Instant,
+    debounce_duration: Duration,
 }
 
 impl FileWatcher {
@@ -42,8 +45,9 @@ impl FileWatcher {
             last_sync: Instant::now(),
             sync_interval: Duration::from_secs(sync_interval),
             waiting_for_rename: false,
-            last_modified_file: None,
-            force_sync: false,
+            changed_files: HashSet::new(),
+            last_event: Instant::now(),
+            debounce_duration: Duration::from_secs(2),
         })
     }
 
@@ -65,7 +69,7 @@ impl FileWatcher {
 
         file_name.ends_with(".tmp") ||
         file_name.ends_with(".TMP") ||
-        file_name.contains("~RF") ||  // Office temp files
+        file_name.contains("~RF") || 
         file_name.starts_with("~") ||
         file_name == "New Text Document.txt" ||
         file_name == "New Microsoft Word Document.docx" ||
@@ -99,26 +103,28 @@ impl FileWatcher {
                     return Ok(());
                 }
 
+                self.last_event = Instant::now();
+
                 match event.kind {
                     EventKind::Create(_) => {
                         if let Some(file_path) = event.paths.first() {
                             if !Self::is_temp_file(file_path) {
                                 logging::status_change(file_path, "added", Color::Yellow);
-                                self.force_sync = true;
+                                self.changed_files.insert(file_path.clone());
                             } else {
                                 self.waiting_for_rename = true;
                             }
                         }
-                        tokio::time::sleep(Duration::from_secs(1)).await;
                     },
                     EventKind::Modify(ModifyKind::Name(_)) => {
                         if let Some(file_path) = event.paths.get(1) {
                             if self.waiting_for_rename && !Self::is_temp_file(file_path) {
                                 logging::status_change(file_path, "added", Color::Yellow);
-                                self.force_sync = true;
+                                self.changed_files.insert(file_path.clone());
                                 self.waiting_for_rename = false;
                             } else if !self.waiting_for_rename {
                                 logging::status_change(file_path, "renamed", Color::BrightBlue);
+                                self.changed_files.insert(file_path.clone());
                             }
                         }
                     },
@@ -126,15 +132,16 @@ impl FileWatcher {
                         if let Some(file_path) = event.paths.first() {
                             if !Self::is_temp_file(file_path) {
                                 logging::status_change(file_path, "deleted", Color::Red);
+                                self.changed_files.insert(file_path.clone());
                             }
                         }
                     },
                     EventKind::Modify(_) => {
                         if let Some(file_path) = event.paths.first() {
                             if !self.waiting_for_rename && !Self::is_temp_file(file_path) {
-                                if self.last_modified_file.as_ref() != Some(file_path) {
+                                if !self.changed_files.contains(file_path) {
                                     logging::status_change(file_path, "modified", Color::Blue);
-                                    self.last_modified_file = Some(file_path.clone());
+                                    self.changed_files.insert(file_path.clone());
                                 }
                             }
                         }
@@ -142,26 +149,44 @@ impl FileWatcher {
                     _ => {}
                 }
 
-                self.try_sync().await?;
+                // Wait for debounce period before syncing
+                if !self.changed_files.is_empty() && self.last_event.elapsed() >= self.debounce_duration {
+                    self.try_sync().await?;
+                }
             },
             Ok(Err(e)) => {
                 logging::error(&format!("Watch error: {}", e));
             },
             Err(_) => {
                 // Timeout - check if we need to sync
-                self.try_sync().await?;
+                if !self.changed_files.is_empty() && self.last_event.elapsed() >= self.debounce_duration {
+                    self.try_sync().await?;
+                }
             }
         }
 
         Ok(())
     }
 
+    pub async fn sync_pending_changes(&mut self) -> Result<()> {
+        if !self.changed_files.is_empty() {
+            // Force a sync regardless of timing
+            if self.git_handler.sync_changes().await? {
+                self.changed_files.clear();
+            }
+        }
+        Ok(())
+    }
+
     async fn try_sync(&mut self) -> Result<()> {
-        if self.force_sync || (!self.waiting_for_rename && self.last_sync.elapsed() >= self.sync_interval) {
+        if !self.waiting_for_rename && 
+           !self.changed_files.is_empty() && 
+           self.last_sync.elapsed() >= self.sync_interval {
+            sleep(Duration::from_millis(500)).await;
+            
             if self.git_handler.sync_changes().await? {
                 self.last_sync = Instant::now();
-                self.force_sync = false;
-                self.last_modified_file = None;
+                self.changed_files.clear();
             }
         }
         Ok(())
