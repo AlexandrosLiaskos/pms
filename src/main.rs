@@ -1,4 +1,4 @@
-use crate::error::{AutoGitSyncError, Result};
+use crate::error::{PMSError, Result};
 use crate::git::GitHandler;
 use crate::watcher::FileWatcher;
 use std::path::PathBuf;
@@ -64,7 +64,7 @@ fn get_target_directory() -> Result<PathBuf> {
         PathBuf::from(&args[1])
     } else {
         std::env::current_dir().map_err(|e| {
-            AutoGitSyncError::InvalidPath(format!("Failed to get current directory: {}", e))
+            PMSError::InvalidPath(format!("Failed to get current directory: {}", e))
         })?
     };
 
