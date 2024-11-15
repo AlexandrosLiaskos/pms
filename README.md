@@ -29,7 +29,7 @@ PMS is a file monitoring system with integrated Git version control. It automati
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pms.git
+git clone https://github.com/AlexandrosLiaskos/pms.git
 cd pms
 
 # Build and install
