@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum AutoGitSyncError {
+pub enum PMSError {
     #[error("Failed to initialize Git repository: {0}")]
     GitInitError(String),
 
@@ -47,18 +47,18 @@ pub type Result<T> = anyhow::Result<T>;
 pub fn validate_path(path: &PathBuf) -> Result<()> {
     // Ensure path exists
     if !path.exists() {
-        return Err(AutoGitSyncError::InvalidPath(
+        return Err(PMSError::InvalidPath(
             "Path does not exist".to_string(),
         ).into());
     }
 
     // Ensure we have read/write permissions
     let metadata = path.metadata().map_err(|e| {
-        AutoGitSyncError::SecurityError(format!("Failed to read path metadata: {}", e))
+        PMSError::SecurityError(format!("Failed to read path metadata: {}", e))
     })?;
 
     if !metadata.is_dir() {
-        return Err(AutoGitSyncError::InvalidPath(
+        return Err(PMSError::InvalidPath(
             "Path must be a directory".to_string(),
         ).into());
     }
@@ -71,7 +71,7 @@ pub fn validate_path(path: &PathBuf) -> Result<()> {
     ];
 
     if suspicious_paths.iter().any(|p| path_str.contains(p)) {
-        return Err(AutoGitSyncError::SecurityError(
+        return Err(PMSError::SecurityError(
             "Cannot monitor system directories".to_string(),
         ).into());
     }
@@ -82,20 +82,20 @@ pub fn validate_path(path: &PathBuf) -> Result<()> {
 pub fn validate_token(token: &str) -> Result<()> {
     // Basic token validation
     if token.is_empty() {
-        return Err(AutoGitSyncError::TokenError(
+        return Err(PMSError::TokenError(
             "GitHub token cannot be empty".to_string(),
         ).into());
     }
 
     if token.len() < 40 {
-        return Err(AutoGitSyncError::TokenError(
+        return Err(PMSError::TokenError(
             "Invalid GitHub token format".to_string(),
         ).into());
     }
 
     // Check for common token prefixes
     if !token.starts_with("ghp_") && !token.starts_with("github_pat_") {
-        return Err(AutoGitSyncError::TokenError(
+        return Err(PMSError::TokenError(
             "Invalid GitHub token format: must start with 'ghp_' or 'github_pat_'".to_string(),
         ).into());
     }
@@ -106,14 +106,14 @@ pub fn validate_token(token: &str) -> Result<()> {
 pub fn validate_git_config(username: &str, email: &str) -> Result<()> {
     // Validate username
     if username.is_empty() {
-        return Err(AutoGitSyncError::InvalidConfig(
+        return Err(PMSError::InvalidConfig(
             "Git username cannot be empty".to_string(),
         ).into());
     }
 
     // Basic email validation
     if !email.contains('@') || !email.contains('.') {
-        return Err(AutoGitSyncError::InvalidConfig(
+        return Err(PMSError::InvalidConfig(
             "Invalid email format".to_string(),
         ).into());
     }
