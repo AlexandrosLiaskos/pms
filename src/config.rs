@@ -1,16 +1,16 @@
 use crate::error::{AutoGitSyncError, Result};
-use secrecy::{ExposeSecret, Secret, SecretString};
+use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use zeroize::Zeroize;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     #[serde(skip_serializing)]
     config_path: PathBuf,
     
-    #[serde(serialize_with = "serialize_secret")]
+    #[serde(serialize_with = "serialize_secret", deserialize_with = "deserialize_secret")]
     github_token: Secret<String>,
     pub git_username: String,
     pub git_email: String,
@@ -25,7 +25,7 @@ pub struct Config {
     pub security: SecurityConfig,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct SecurityConfig {
     #[serde(default = "default_ignore_patterns")]
     pub ignore_patterns: Vec<String>,
@@ -153,8 +153,9 @@ impl Config {
 
 impl Drop for Config {
     fn drop(&mut self) {
-        // Ensure sensitive data is wiped from memory
-        self.github_token.expose_secret().zeroize();
+        // Create a mutable copy for zeroizing
+        let mut token = self.github_token.expose_secret().to_string();
+        token.zeroize();
     }
 }
 
@@ -163,6 +164,14 @@ where
     S: serde::Serializer,
 {
     serializer.serialize_str(secret.expose_secret())
+}
+
+fn deserialize_secret<'de, D>(deserializer: D) -> std::result::Result<Secret<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(Secret::new(s))
 }
 
 #[cfg(test)]
