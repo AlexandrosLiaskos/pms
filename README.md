@@ -1,49 +1,41 @@
 # PMS (Project Management System)
 
-PMS is a comprehensive project management system with integrated Git version control. It helps you organize and track your projects while automatically handling Git synchronization in the background.
+PMS is a comprehensive project management system with integrated Git version control. It provides real-time file monitoring and automatic Git synchronization with intelligent debouncing and secure GitHub integration.
 
-## System Requirements
+## Features
 
-The system is cross-platform compatible and works on:
-- Linux (native)
-- Windows (native and WSL)
-- macOS
+### File Monitoring
+- Real-time file system monitoring with intelligent debouncing
+- Smart detection of file creation, modification, deletion, and rename events
+- Automatic filtering of temporary files and system artifacts
+- Configurable sync intervals and batch processing
+- Cross-platform file system event handling
 
-## Current Features (Alpha v0.1.0)
+### Git Integration
+- Automated Git repository initialization and configuration
+- Secure GitHub repository creation and management
+- Intelligent change detection and batching
+- Automatic commits with meaningful messages
+- Force push protection with configurable settings
+- Clean handling of branch management
 
-- **Project Management**
-  - Project organization and tracking
-  - Task management and monitoring
-  - Project status tracking
-  - Resource allocation tracking
-  - Project timeline management
-  - Activity logging and reporting
-  - Cross-platform compatibility
-  - Real-time project updates
+### Security
+- Secure token storage and handling
+- File path validation and sanitization
+- Configurable file size limits
+- Built-in ignore patterns for sensitive files
+- Token refresh management
+- Permission validation
+- Secure error handling
 
-- **Git Integration**
-  - Automated Git synchronization
-  - Real-time file system monitoring
-  - Automatic commits with meaningful messages
-  - Automatic pushing to GitHub
-  - Smart change detection
-  - Continuous background monitoring
-  - Detailed activity logging
-
-- **Process Management**
-  - Clean process management with proper cleanup
-  - Cross-platform signal handling
-  - Reliable state management
-
-- **GitHub Integration**
-  - OAuth-based authentication
-  - Secure credential storage
-  - Automatic repository synchronization
-  - Force push to ensure remote sync
+### Process Management
+- Clean process management with proper cleanup
+- Cross-platform signal handling (Ctrl+C support)
+- Graceful shutdown with pending changes sync
+- Detailed activity logging
+- Colored status output
 
 ## Installation
-
-Currently, PMS needs to be built from source:
 
 ```bash
 # Clone the repository
@@ -54,134 +46,122 @@ cd pms
 cargo install --path .
 ```
 
-For Windows users:
-```powershell
-# Using PowerShell
-git clone https://github.com/yourusername/pms.git
-cd pms
-cargo install --path .
+## Configuration
+
+Create a configuration file at:
+- Linux/macOS: `~/.config/pms/config.toml`
+- Windows: `%APPDATA%\pms\config.toml`
+
+Example configuration:
+```toml
+# GitHub authentication
+github_token = "your-github-token"
+git_username = "your-username"
+git_email = "your-email@example.com"
+
+# Sync settings
+sync_interval = 2  # seconds
+batch_size = 10    # files per batch
+
+# Security settings
+[security]
+max_file_size = 104857600  # 100MB
+allow_force_push = false
+token_refresh_days = 90
+
+# Files to ignore
+ignore_patterns = [
+    "*.env",
+    "*.key",
+    "*.pem",
+    "id_rsa",
+    "id_rsa.pub",
+    "*.log"
+]
 ```
 
-## Quick Start
+## Usage
 
-1. Navigate to your project directory:
+1. Initialize a project:
 ```bash
-cd your-project
-# or on Windows:
-cd path\to\your-project
+pms init [--name project-name]
 ```
 
-2. Initialize PMS in your project:
-```bash
-pms init
-```
-
-3. Start project management and monitoring:
+2. Start monitoring:
 ```bash
 pms start
 ```
-This will start continuous project monitoring and management that persists until explicitly stopped.
+This will:
+- Initialize Git repository if needed
+- Create private GitHub repository
+- Configure Git credentials
+- Start file monitoring
+- Begin automatic synchronization
 
-4. Check project status:
+3. Monitor status:
 ```bash
 pms status
 ```
 
-5. Stop monitoring when needed:
+4. Stop monitoring:
 ```bash
 pms stop
 ```
 
 ## Project Structure
 
-PMS creates a `.pms` directory in your project with the following structure:
-
 ```
 .pms/
-├── pms.log       # Activity and error logs (JSON formatted)
-├── monitor_active # Indicates active monitoring status
-└── config.toml   # Project configuration
+├── pms.log          # Activity and error logs (JSON formatted)
+├── monitor_active   # Monitoring status indicator
+└── config.toml      # Project-specific configuration
 ```
-
-## Available Commands
-
-- `pms init [--name <project-name>]`: Initialize PMS in the current directory
-- `pms login`: Authenticate with GitHub
-- `pms start`: Start project monitoring and management
-- `pms stop`: Stop project monitoring
-- `pms status`: Show project status and monitoring state
-
-## Platform-Specific Notes
-
-### Windows
-- Uses Windows-native file system events
-- Supports both cmd.exe and PowerShell
-- Works in WSL (Windows Subsystem for Linux)
-- Config stored in `%APPDATA%\pms`
-
-### Linux/macOS
-- Uses inotify/FSEvents for file monitoring
-- Config stored in `~/.config/pms`
-- Full terminal support
-
-## Current Limitations
-
-As this is an alpha release, please note:
-
-- Basic project management features
-- Simple task tracking
-- Basic authentication flow (GitHub OAuth)
-- Simple commit message generation
-- Fixed sync interval (2 seconds)
-- Limited error recovery
-- Basic project statistics
-
-## Roadmap
-
-- [ ] Advanced project tracking
-- [ ] Task dependencies and critical path
-- [ ] Resource allocation optimization
-- [ ] Team collaboration features
-- [ ] Project timeline visualization
-- [ ] Custom workflow templates
-- [ ] Advanced reporting
-- [ ] Web dashboard
-- [ ] VSCode extension
-- [ ] Multiple remote support
-- [ ] Conflict resolution
-- [ ] Project analytics
-
-## Contributing
-
-PMS is in active development and contributions are welcome! Here's how you can help:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## Requirements
 
-- Rust 1.56 or later
-- Git installed and configured
-- GitHub account
+- Rust 2021 edition (1.56 or later)
+- Git 2.0 or later
+- GitHub account with personal access token
+- Supported platforms:
+  - Linux (native)
+  - macOS
+  - Windows (native and WSL)
+
+## Current State
+
+Version 0.1.0 includes:
+- Complete file monitoring system with debouncing
+- Secure GitHub integration
+- Intelligent change detection
+- Cross-platform support
+- Configuration system
+- Security features
+- Process management
+- Error handling
+- Activity logging
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Security
+
+For security-related information and guidelines, see [SECURITY.md](SECURITY.md).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-As this is an alpha release, please:
-
-1. Check existing issues before reporting problems
-2. Provide detailed information when reporting bugs, including:
+For support:
+1. Check existing GitHub issues
+2. Submit new issues with:
    - Operating system and version
-   - Rust version
-   - Git version
+   - Rust version (`rustc --version`)
+   - Git version (`git --version`)
    - Steps to reproduce
-3. Use the GitHub issues tracker for feature requests
+   - Relevant logs from `.pms/pms.log`
 
 ## Acknowledgments
 

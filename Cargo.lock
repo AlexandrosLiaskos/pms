@@ -134,36 +134,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "auto-git-sync"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "assert_fs",
- "base64",
- "chrono",
- "colored",
- "ctrlc",
- "dirs",
- "env_logger 0.10.2",
- "log",
- "mockall",
- "notify",
- "predicates 3.1.2",
- "reqwest",
- "secrecy",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
- "test-log",
- "thiserror",
- "tokio",
- "tokio-test",
- "toml",
- "zeroize",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1361,6 +1331,36 @@ name = "pkg-config"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
+
+[[package]]
+name = "pms"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_fs",
+ "base64",
+ "chrono",
+ "colored",
+ "ctrlc",
+ "dirs",
+ "env_logger 0.10.2",
+ "log",
+ "mockall",
+ "notify",
+ "predicates 3.1.2",
+ "reqwest",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "test-log",
+ "thiserror",
+ "tokio",
+ "tokio-test",
+ "toml",
+ "zeroize",
+]
 
 [[package]]
 name = "predicates"
