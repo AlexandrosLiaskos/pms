@@ -1,6 +1,6 @@
 use anyhow::Context;
 use crate::config::Config;
-use crate::error::{AutoGitSyncError, Result};
+use crate::error::{PMSError, Result};
 use secrecy::ExposeSecret;
 use std::path::PathBuf;
 use tokio::process::Command;
@@ -35,11 +35,11 @@ impl GitHandler {
         let repo_name = self.repo_path
             .file_name()
             .and_then(|n| n.to_str())
-            .ok_or_else(|| AutoGitSyncError::InvalidPath("Invalid directory name".to_string()))?;
+            .ok_or_else(|| PMSError::InvalidPath("Invalid directory name".to_string()))?;
 
         let repo_name = crate::error::sanitize_repo_name(repo_name);
         if repo_name.is_empty() {
-            return Err(AutoGitSyncError::InvalidPath(
+            return Err(PMSError::InvalidPath(
                 "Repository name is empty after sanitization".to_string(),
             ).into());
         }
@@ -85,8 +85,8 @@ impl GitHandler {
         // Create initial README if directory is empty
         let readme_path = self.repo_path.join("README.md");
         if !readme_path.exists() {
-            fs::write(&readme_path, format!("# {}\n\nAutomatically synced with auto-git-sync", repo_name))
-                .map_err(|e| AutoGitSyncError::GitInitError(format!("Failed to create README: {}", e)))?;
+            fs::write(&readme_path, format!("# {}\n\nManaged by PMS (Project Management System)", repo_name))
+                .map_err(|e| PMSError::GitInitError(format!("Failed to create README: {}", e)))?;
         }
 
         // Initial commit and push
@@ -105,7 +105,7 @@ impl GitHandler {
         self.log_git("push");
         self.execute_git(&["push", "-f", "origin", "main"])
             .await
-            .map_err(|e| AutoGitSyncError::GitPushError(e.to_string()))
+            .map_err(|e| PMSError::GitPushError(e.to_string()))
             .context("Failed to push initial commit")?;
 
         logging::success("Repository initialized successfully");
@@ -126,7 +126,7 @@ impl GitHandler {
         }
 
         // Create commit
-        self.execute_git(&["commit", "-m", "Auto-sync update"])
+        self.execute_git(&["commit", "-m", "Project update"])
             .await
             .context("Failed to create commit")?;
 
@@ -164,7 +164,7 @@ impl GitHandler {
         // Force push changes
         self.execute_git(&["push", "-f", "origin", "main"])
             .await
-            .map_err(|e| AutoGitSyncError::GitPushError(e.to_string()))
+            .map_err(|e| PMSError::GitPushError(e.to_string()))
             .context("Failed to push changes")?;
 
         logging::success("Changes synced ✓");
@@ -177,13 +177,13 @@ impl GitHandler {
             .current_dir(&self.repo_path)
             .output()
             .await
-            .map_err(|e| AutoGitSyncError::GitInitError(e.to_string()))?;
+            .map_err(|e| PMSError::GitInitError(e.to_string()))?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
             let error = if stderr.is_empty() { stdout } else { stderr };
-            return Err(AutoGitSyncError::GitInitError(format!("Git command failed: {} ({})", error, args.join(" "))).into());
+            return Err(PMSError::GitInitError(format!("Git command failed: {} ({})", error, args.join(" "))).into());
         }
 
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
@@ -198,7 +198,7 @@ impl GitHandler {
                 "Authorization",
                 format!("Bearer {}", self.config.get_token().expose_secret()),
             )
-            .header("User-Agent", "auto-git-sync")
+            .header("User-Agent", "pms")
             .json(&serde_json::json!({
                 "name": name,
                 "private": true,
@@ -206,7 +206,7 @@ impl GitHandler {
             }))
             .send()
             .await
-            .map_err(|e| AutoGitSyncError::NetworkError(e.to_string()))?;
+            .map_err(|e| PMSError::NetworkError(e.to_string()))?;
 
         if !response.status().is_success() {
             let error = response
@@ -217,7 +217,7 @@ impl GitHandler {
             // Ignore if repository already exists
             if !error.contains("already exists") {
                 logging::warning("Failed to create GitHub repository");
-                return Err(AutoGitSyncError::GitHubApiError(error).into());
+                return Err(PMSError::GitHubApiError(error).into());
             }
         }
 
