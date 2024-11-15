@@ -37,6 +37,42 @@ cargo build --release
 cargo install --path .
 ```
 
+## Configuration
+
+Create the configuration file at `~/.config/pms/config.toml`:
+
+```bash
+mkdir -p ~/.config/pms
+nano ~/.config/pms/config.toml
+```
+
+Add the following configuration (replace with your values):
+
+```toml
+# Required: GitHub and Git settings
+github_token = "ghp_your_token_here"
+git_username = "your-github-username"
+git_email = "your.email@example.com"
+
+# Optional: Sync settings
+sync_interval = 2      # Sync interval in seconds
+batch_size = 10       # Number of files to process in batch
+
+# Security settings
+[security]
+ignore_patterns = [
+    "*.env",
+    "*.key",
+    "*.pem",
+    "id_rsa",
+    "id_rsa.pub",
+    "*.log"
+]
+max_file_size = 104857600  # Maximum file size in bytes (100MB)
+allow_force_push = true    # Allow force pushing to repository
+token_refresh_days = 90    # GitHub token refresh reminder
+```
+
 ## Usage
 
 The program monitors a specified directory and automatically syncs changes to GitHub:
