@@ -1,194 +1,40 @@
-use anyhow::{Context, Result};
-use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use notify::event::ModifyKind;
+use crate::error::{AutoGitSyncError, Result};
+use crate::git::GitHandler;
+use crate::watcher::FileWatcher;
 use std::path::PathBuf;
-use std::sync::mpsc::channel;
-use std::time::{Duration, Instant};
-use tokio::process::Command;
-use reqwest::Client;
-use serde_json::json;
-use colored::*;
+use tokio::signal;
 
 mod config;
+mod error;
+mod git;
 mod logging;
-use config::Config;
-
-fn is_temp_file(path: &PathBuf) -> bool {
-    let file_name = path.file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
-
-    file_name.ends_with(".tmp") ||
-    file_name.ends_with(".TMP") ||
-    file_name.contains("~RF") ||  // Office temp files
-    file_name.starts_with("~") ||
-    file_name == "New Text Document.txt" ||
-    file_name == "New Microsoft Word Document.docx" ||
-    file_name == "New Microsoft Excel Worksheet.xlsx" ||
-    file_name == "New Microsoft PowerPoint Presentation.pptx" ||
-    file_name.starts_with("New ")
-}
-
-fn should_ignore_file(path: &PathBuf) -> bool {
-    let file_name = path.file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
-
-    // Ignore Git's internal files and temp files
-    if file_name == "index.lock" || 
-       file_name.starts_with(".git") ||
-       file_name == ".DS_Store" ||
-       file_name == "Thumbs.db" {
-        return true;
-    }
-
-    // Check if path contains .git directory
-    path.components().any(|c| c.as_os_str() == ".git")
-}
-
-async fn create_github_repository(token: &str, name: &str) -> Result<()> {
-    let client = Client::new();
-    let response = client
-        .post("https://api.github.com/user/repos")
-        .header("Authorization", format!("Bearer {}", token))
-        .header("User-Agent", "auto-git-sync")
-        .json(&json!({
-            "name": name,
-            "private": true,
-            "auto_init": false,
-        }))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        let error = response.text().await?;
-        if !error.contains("already exists") {
-            anyhow::bail!("Failed to create repository: {}", error);
-        }
-        logging::warning("Repository already exists, using existing one");
-    }
-
-    Ok(())
-}
-
-async fn init_repository(path: &PathBuf, config: &Config) -> Result<()> {
-    // Get repository name from directory name
-    let repo_name = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .ok_or_else(|| anyhow::anyhow!("Invalid directory name"))?;
-
-    // Initialize Git if needed
-    if !path.join(".git").exists() {
-        logging::init_message("Initializing Git repository...");
-        Command::new("git")
-            .arg("init")
-            .current_dir(path)
-            .output()
-            .await
-            .context("Failed to initialize Git repository")?;
-    } else {
-        logging::warning("Using existing Git repository");
-    }
-
-    // Set Git config
-    logging::init_message("Configuring Git credentials...");
-    Command::new("git")
-        .args(["config", "user.name", &config.git_username])
-        .current_dir(path)
-        .output()
-        .await
-        .context("Failed to set git username")?;
-
-    Command::new("git")
-        .args(["config", "user.email", &config.git_email])
-        .current_dir(path)
-        .output()
-        .await
-        .context("Failed to set git email")?;
-
-    // Create GitHub repository if it doesn't exist
-    logging::init_message("Setting up GitHub repository...");
-    create_github_repository(&config.github_token, repo_name).await?;
-
-    // Set up remote
-    Command::new("git")
-        .args(["remote", "remove", "origin"])
-        .current_dir(path)
-        .output()
-        .await
-        .ok(); // Ignore error if remote doesn't exist
-
-    let remote_url = format!(
-        "https://{}@github.com/{}/{}",
-        config.github_token,
-        config.git_username,
-        repo_name
-    );
-
-    Command::new("git")
-        .args(["remote", "add", "origin", &remote_url])
-        .current_dir(path)
-        .output()
-        .await
-        .context("Failed to add remote")?;
-
-    // Force push all files initially
-    logging::git_operation("Initial commit...");
-    Command::new("git")
-        .args(["add", "."])
-        .current_dir(path)
-        .output()
-        .await?;
-
-    Command::new("git")
-        .args(["commit", "-m", "Initial commit"])
-        .current_dir(path)
-        .output()
-        .await?;
-
-    // Set branch to main
-    Command::new("git")
-        .args(["branch", "-M", "main"])
-        .current_dir(path)
-        .output()
-        .await?;
-
-    // Force push to main branch
-    Command::new("git")
-        .args(["push", "-f", "origin", "main"])
-        .current_dir(path)
-        .output()
-        .await
-        .context("Failed to push initial commit")?;
-
-    logging::success("Repository initialized successfully");
-    Ok(())
-}
+mod watcher;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Get directory to monitor from command line
-    let args: Vec<String> = std::env::args().collect();
-    let path = if args.len() > 1 {
-        PathBuf::from(&args[1])
-    } else {
-        std::env::current_dir()?
-    };
+    // Initialize logging
+    env_logger::init();
 
-    // Load config or create example
-    let config = match Config::load() {
+    // Get directory to monitor from command line
+    let path = get_target_directory()?;
+
+    // Validate path
+    error::validate_path(&path)?;
+
+    // Load config
+    let config = match config::Config::load() {
         Ok(config) => config,
         Err(_) => {
-            let config_path = Config::save_example()?;
+            let config_path = config::Config::save_example()?;
             logging::info(&format!("Created example config at: {}", config_path.display()));
             logging::info("Please edit this file with your GitHub credentials and run again.");
             return Ok(());
         }
     };
 
-    // Initialize repository if needed
-    init_repository(&path, &config).await?;
+    // Initialize Git handler
+    let git_handler = GitHandler::new(path.clone(), config.clone());
+    git_handler.init_repository().await?;
 
     // Get repository name for startup message
     let repo_name = path
@@ -198,149 +44,102 @@ async fn main() -> Result<()> {
 
     logging::startup_message(&path, &config.git_username, repo_name);
 
-    // Set up file system watcher
-    let (tx, rx) = channel();
-    let mut watcher = RecommendedWatcher::new(
-        move |res| {
-            if let Ok(event) = res {
-                tx.send(event).unwrap_or_else(|e| logging::error(&e.to_string()));
-            }
-        },
-        notify::Config::default(),
-    )?;
+    // Initialize file watcher
+    let mut watcher = FileWatcher::new(path, git_handler, config.sync_interval)?;
+    watcher.start_watching()?;
 
-    // Start watching the directory
-    watcher.watch(path.as_ref(), RecursiveMode::Recursive)?;
-
-    // Keep track of last sync and modifications
-    let mut last_sync = Instant::now();
-    let sync_interval = Duration::from_secs(2);
-    let mut waiting_for_rename = false;
-    let mut last_modified_file: Option<PathBuf> = None;
-    let mut force_sync = false;
-
-    // Main event loop
-    loop {
-        match rx.recv_timeout(Duration::from_millis(100)) {
-            Ok(event) => {
-                // Skip Git's internal files
-                if event.paths.iter().any(|p| should_ignore_file(p)) {
-                    continue;
-                }
-
-                match event.kind {
-                    EventKind::Create(_) => {
-                        if let Some(file_path) = event.paths.first() {
-                            if !is_temp_file(file_path) {
-                                logging::status_change(file_path, "added", Color::Yellow);
-                                force_sync = true;
-                            } else {
-                                waiting_for_rename = true;
-                            }
-                        }
-                        tokio::time::sleep(Duration::from_secs(1)).await;
-                    },
-                    EventKind::Modify(ModifyKind::Name(_)) => {
-                        if let Some(file_path) = event.paths.get(1) {
-                            if waiting_for_rename && !is_temp_file(file_path) {
-                                logging::status_change(file_path, "added", Color::Yellow);
-                                force_sync = true;
-                                waiting_for_rename = false;
-                            } else if !waiting_for_rename {
-                                logging::status_change(file_path, "modified", Color::BrightBlue);
-                            }
-                        }
-                    },
-                    EventKind::Remove(_) => {
-                        if let Some(file_path) = event.paths.first() {
-                            if !is_temp_file(file_path) {
-                                logging::status_change(file_path, "deleted", Color::Red);
-                            }
-                        }
-                    },
-                    EventKind::Modify(_) => {
-                        if let Some(file_path) = event.paths.first() {
-                            if !waiting_for_rename && !is_temp_file(file_path) {
-                                // Only show modify message if it's a different file
-                                if last_modified_file.as_ref() != Some(file_path) {
-                                    logging::status_change(file_path, "modified", Color::Blue);
-                                    last_modified_file = Some(file_path.clone());
-                                }
-                            }
-                        }
-                    },
-                    _ => {}
-                }
-
-                // Sync changes if needed
-                if force_sync || (!waiting_for_rename && last_sync.elapsed() >= sync_interval) {
-                    sync_changes(&path).await?;
-                    last_sync = Instant::now();
-                    force_sync = false;
-                    last_modified_file = None;
-                }
-            },
-            Err(_) => {
-                // No events for 100ms
-                if !waiting_for_rename && last_sync.elapsed() >= sync_interval {
-                    sync_changes(&path).await?;
-                    last_sync = Instant::now();
-                    last_modified_file = None;
-                }
+    // Handle Ctrl+C gracefully
+    tokio::select! {
+        result = watch_loop(&mut watcher) => {
+            if let Err(e) = result {
+                logging::error(&format!("Error in watch loop: {}", e));
+                return Err(e);
             }
         }
-    }
-}
-
-async fn sync_changes(path: &PathBuf) -> Result<()> {
-    // Add all changes
-    Command::new("git")
-        .args(["add", "."])
-        .current_dir(path)
-        .output()
-        .await
-        .context("Failed to stage changes")?;
-
-    // Check if there are changes to commit
-    let status = Command::new("git")
-        .args(["status", "--porcelain"])
-        .current_dir(path)
-        .output()
-        .await
-        .context("Failed to check git status")?;
-
-    if !status.stdout.is_empty() {
-        // Create commit
-        Command::new("git")
-            .args(["commit", "-m", "Auto-sync update"])
-            .current_dir(path)
-            .output()
-            .await
-            .context("Failed to create commit")?;
-
-        // Reset main branch to current HEAD
-        Command::new("git")
-            .args(["branch", "-f", "main", "HEAD"])
-            .current_dir(path)
-            .output()
-            .await
-            .context("Failed to reset main branch")?;
-
-        // Force push changes
-        let output = Command::new("git")
-            .args(["push", "-f", "origin", "main"])
-            .current_dir(path)
-            .output()
-            .await
-            .context("Failed to push changes")?;
-
-        if !output.status.success() {
-            logging::error(&String::from_utf8_lossy(&output.stderr));
-            return Err(anyhow::anyhow!("Failed to push changes"));
-        } else {
-            logging::success("Changes pushed successfully ✓");
+        _ = handle_shutdown_signal() => {
+            logging::info("Received shutdown signal, stopping...");
         }
     }
 
     Ok(())
+}
+
+fn get_target_directory() -> Result<PathBuf> {
+    let args: Vec<String> = std::env::args().collect();
+    let path = if args.len() > 1 {
+        PathBuf::from(&args[1])
+    } else {
+        std::env::current_dir().map_err(|e| {
+            AutoGitSyncError::InvalidPath(format!("Failed to get current directory: {}", e))
+        })?
+    };
+
+    Ok(path)
+}
+
+async fn watch_loop(watcher: &mut FileWatcher) -> Result<()> {
+    loop {
+        if let Err(e) = watcher.handle_events().await {
+            logging::error(&format!("Error handling events: {}", e));
+            // Continue watching even if we encounter errors
+            continue;
+        }
+    }
+}
+
+async fn handle_shutdown_signal() {
+    let mut sigint = signal::unix::signal(signal::unix::SignalKind::interrupt())
+        .expect("Failed to register SIGINT handler");
+    let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+        .expect("Failed to register SIGTERM handler");
+
+    tokio::select! {
+        _ = sigint.recv() => {},
+        _ = sigterm.recv() => {},
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_get_target_directory() {
+        // Test with no arguments
+        let result = get_target_directory();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), std::env::current_dir().unwrap());
+
+        // Test with argument
+        std::env::set_args(vec!["program".to_string(), "/tmp".to_string()].into_iter());
+        let result = get_target_directory();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), PathBuf::from("/tmp"));
+    }
+
+    #[tokio::test]
+    async fn test_initialization() {
+        let temp_dir = tempdir().unwrap();
+        let path = temp_dir.path().to_path_buf();
+
+        // Create test config
+        let config = config::Config {
+            config_path: PathBuf::new(),
+            github_token: secrecy::Secret::new("test_token".to_string()),
+            git_username: "test-user".to_string(),
+            git_email: "test@example.com".to_string(),
+            sync_interval: 2,
+            batch_size: 10,
+            security: config::SecurityConfig::default(),
+        };
+
+        // Test Git handler initialization
+        let git_handler = GitHandler::new(path.clone(), config.clone());
+        assert!(git_handler.init_repository().await.is_ok());
+
+        // Test watcher initialization
+        let watcher = FileWatcher::new(path, git_handler, config.sync_interval);
+        assert!(watcher.is_ok());
+    }
 }
