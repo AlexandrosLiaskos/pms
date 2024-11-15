@@ -1,4 +1,4 @@
-# PMS (Project Management System)
+# PMS (Project Management System) - Alpha v0.1.0
 
 PMS is a file monitoring system with integrated Git version control. It automatically watches your project directory and synchronizes changes with GitHub in real-time.
 
