@@ -32,11 +32,10 @@ PMS is a file monitoring system with integrated Git version control. It automati
 git clone https://github.com/yourusername/pms.git
 cd pms
 
-# Build in release mode
+# Build and install
 cargo build --release
-
-# Install the binary
 cargo install --path .
+```
 
 ## Usage
 
@@ -50,11 +49,13 @@ pms
 pms /path/to/your/project
 ```
 
-### What to Expect
+### Terminal Output Example
 
-![alt text](image.png)
+Here's what you'll see when running PMS:
 
-When you run PMS, you'll see output like this:
+![Terminal output showing compilation and monitoring](terminal_output.png)
+
+The system provides real-time feedback with colored indicators:
 
 ```
 04:17:14 INIT Initializing Git repository
@@ -65,7 +66,7 @@ When you run PMS, you'll see output like this:
 04:17:14 STARTUP Press Ctrl+C to stop
 ```
 
-As you make changes to files, you'll see real-time status updates:
+File changes are shown with colored indicators:
 ```
 04:20:00 ~ modified README.md
 04:20:04 SUCCESS Changes synced ✓
@@ -75,11 +76,9 @@ As you make changes to files, you'll see real-time status updates:
 04:23:17 SUCCESS Changes synced ✓
 04:23:28 + added hhh.txt
 04:23:38 SUCCESS Changes synced ✓
-04:24:01 → renamed SECURITY.md
-04:24:04 SUCCESS Changes synced ✓
 ```
 
-File status indicators:
+Status Indicators:
 - `+` Yellow: File added
 - `~` Blue: File modified
 - `→` Bright Blue: File renamed
@@ -104,7 +103,7 @@ your-project/
 
 ## Troubleshooting
 
-### Common Error Messages
+Common error messages and solutions:
 
 1. **Configuration Errors**
    ```
@@ -130,35 +129,20 @@ your-project/
    ```
    Solution: Check GitHub token permissions and network connection
 
-### Logs
-
-Check detailed logs at:
+For detailed logs:
 ```bash
 cat .pms/pms.log
 ```
 
-Logs include:
-- Timestamped events
-- File changes
-- Git operations
-- Error details
-
 ## Support
 
-If you encounter issues:
-
-1. Check the logs:
-   ```bash
-   cat .pms/pms.log
-   ```
-
-2. Submit an issue with:
-   - Full error message
-   - Log contents
-   - OS version
-   - Rust version (`rustc --version`)
-   - Git version (`git --version`)
-   - Steps to reproduce
+When reporting issues, include:
+- Full error message
+- Log contents (`cat .pms/pms.log`)
+- OS version
+- Rust version (`rustc --version`)
+- Git version (`git --version`)
+- Steps to reproduce
 
 ## License
 
