@@ -117,11 +117,6 @@ Common error messages and solutions:
    ```
    Solution: Check GitHub token permissions and network connection
 
-For detailed logs:
-```bash
-cat .pms/pms.log
-```
-
 ## Support
 
 When reporting issues, include:
