@@ -10,10 +10,10 @@ Currently supported versions for security updates:
 
 ## Reporting a Vulnerability
 
-We take security seriously at Auto Git Sync. If you discover a security vulnerability, please follow these steps:
+We take security seriously at PMS (Project Management System). If you discover a security vulnerability, please follow these steps:
 
 1. **DO NOT** open a public issue on GitHub
-2. Send an email to alexliaskosga@gmail.com with:
+2. Send an email to security@pms.dev with:
    - A description of the vulnerability
    - Steps to reproduce
    - Potential impact
@@ -27,7 +27,7 @@ We take security seriously at Auto Git Sync. If you discover a security vulnerab
 
 ## Security Best Practices
 
-When using Auto Git Sync:
+When using PMS:
 
 1. **GitHub Token Security**:
    - Use tokens with minimal required permissions (only 'repo' scope needed)
@@ -43,7 +43,7 @@ When using Auto Git Sync:
    - Respect the configured file size limits
 
 3. **Configuration Security**:
-   - Keep config file at `~/.config/auto-git-sync/config.toml`
+   - Keep config file at `~/.config/pms/config.toml`
    - Set config file permissions to 600 (user read/write only)
    - Don't commit config files
    - Regularly update credentials
@@ -58,7 +58,7 @@ When using Auto Git Sync:
 
 ## Known Security Measures
 
-Auto Git Sync implements several security measures:
+PMS implements several security measures:
 
 1. **Token Protection**:
    - Secure token storage with proper file permissions
@@ -72,7 +72,7 @@ Auto Git Sync implements several security measures:
    - File permission checks
    - Secure file handling with debouncing
    - Temporary file detection and filtering
-   - Maximum file size enforcements
+   - Maximum file size enforcement
 
 3. **Error Handling**:
    - Secure error messages (no sensitive data)
@@ -98,8 +98,9 @@ Auto Git Sync implements several security measures:
 
 ## Audit Logging
 
-Auto Git Sync provides audit logging for security-relevant events:
+PMS provides audit logging for security-relevant events:
 
+- Project changes and updates
 - File operations (add, modify, delete, rename)
 - Authentication attempts
 - Configuration changes
@@ -139,12 +140,13 @@ Our development process includes:
 
 ## Contact
 
-Security-related questions: alexliaskosga@gmail.com
+Security-related questions: security@pms.dev
 
 For non-security issues, please use GitHub issues.
 
 ## Recent Security Improvements
 
+- Added proper Ctrl+C handling for clean shutdown
 - Improved file change debouncing
 - Enhanced error messages with context
 - Added file size limits
