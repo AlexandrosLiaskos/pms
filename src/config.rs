@@ -1,4 +1,4 @@
-use crate::error::{AutoGitSyncError, Result};
+use crate::error::{PMSError, Result};
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -61,17 +61,17 @@ impl Config {
         let config_path = Self::get_config_path()?;
         
         if !config_path.exists() {
-            return Err(AutoGitSyncError::ConfigError(
-                "Config file not found. Please create a config file at ~/.config/auto-git-sync/config.toml".to_string(),
+            return Err(PMSError::ConfigError(
+                "Config file not found. Please create a config file at ~/.config/pms/config.toml".to_string(),
             ).into());
         }
 
         let content = fs::read_to_string(&config_path).map_err(|e| {
-            AutoGitSyncError::ConfigError(format!("Failed to read config: {}", e))
+            PMSError::ConfigError(format!("Failed to read config: {}", e))
         })?;
 
         let mut config: Config = toml::from_str(&content).map_err(|e| {
-            AutoGitSyncError::ConfigError(format!("Invalid config format: {}", e))
+            PMSError::ConfigError(format!("Invalid config format: {}", e))
         })?;
 
         config.config_path = config_path;
@@ -82,8 +82,8 @@ impl Config {
 
     fn get_config_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir()
-            .ok_or_else(|| AutoGitSyncError::ConfigError("Could not find config directory".to_string()))?
-            .join("auto-git-sync");
+            .ok_or_else(|| PMSError::ConfigError("Could not find config directory".to_string()))?
+            .join("pms");
 
         Ok(config_dir.join("config.toml"))
     }
@@ -93,13 +93,13 @@ impl Config {
         crate::error::validate_git_config(&self.git_username, &self.git_email)?;
 
         if self.sync_interval < 1 {
-            return Err(AutoGitSyncError::InvalidConfig(
+            return Err(PMSError::InvalidConfig(
                 "Sync interval must be at least 1 second".to_string(),
             ).into());
         }
 
         if self.batch_size < 1 {
-            return Err(AutoGitSyncError::InvalidConfig(
+            return Err(PMSError::InvalidConfig(
                 "Batch size must be at least 1".to_string(),
             ).into());
         }
