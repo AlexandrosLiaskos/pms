@@ -1,4 +1,4 @@
-use crate::error::{AutoGitSyncError, Result};
+use crate::error::{PMSError, Result};
 use crate::git::GitHandler;
 use crate::logging;
 use colored::*;
@@ -32,7 +32,7 @@ impl FileWatcher {
                 tx.send(res).unwrap_or_else(|e| logging::error(&e.to_string()));
             },
             notify::Config::default(),
-        ).map_err(|e| AutoGitSyncError::WatchError {
+        ).map_err(|e| PMSError::WatchError {
             path: path.clone(),
             error: e.to_string(),
         })?;
@@ -54,7 +54,7 @@ impl FileWatcher {
     pub fn start_watching(&mut self) -> Result<()> {
         self.watcher
             .watch(&self.path, RecursiveMode::Recursive)
-            .map_err(|e| AutoGitSyncError::WatchError {
+            .map_err(|e| PMSError::WatchError {
                 path: self.path.clone(),
                 error: e.to_string(),
             })?;
