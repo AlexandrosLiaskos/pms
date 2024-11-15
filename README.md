@@ -89,18 +89,6 @@ To stop monitoring, press `Ctrl+C`. The system will:
 2. Clean up resources
 3. Exit gracefully
 
-## Project Structure
-
-After starting PMS:
-```
-your-project/
-├── .pms/
-│   ├── pms.log          # JSON-formatted logs
-│   ├── monitor_active   # Status indicator
-│   └── config.toml      # Project-specific settings
-└── ... your files ...
-```
-
 ## Troubleshooting
 
 Common error messages and solutions:
