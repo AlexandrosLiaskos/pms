@@ -43,10 +43,7 @@ The program monitors a specified directory and automatically syncs changes to Gi
 
 ```bash
 # Start monitoring the current directory
-pms
-
-# Monitor a specific directory
-pms /path/to/your/project
+cargo run
 ```
 
 ### Terminal Output Example
