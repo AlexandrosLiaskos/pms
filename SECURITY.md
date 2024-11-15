@@ -13,7 +13,7 @@ Currently supported versions for security updates:
 We take security seriously at Auto Git Sync. If you discover a security vulnerability, please follow these steps:
 
 1. **DO NOT** open a public issue on GitHub
-2. Send an email to security@auto-git-sync.dev with:
+2. Send an email to alexliaskosga@gmail.com with:
    - A description of the vulnerability
    - Steps to reproduce
    - Potential impact
@@ -72,7 +72,7 @@ Auto Git Sync implements several security measures:
    - File permission checks
    - Secure file handling with debouncing
    - Temporary file detection and filtering
-   - Maximum file size enforcement
+   - Maximum file size enforcements
 
 3. **Error Handling**:
    - Secure error messages (no sensitive data)
@@ -139,13 +139,12 @@ Our development process includes:
 
 ## Contact
 
-Security-related questions: security@auto-git-sync.dev
+Security-related questions: alexliaskosga@gmail.com
 
 For non-security issues, please use GitHub issues.
 
 ## Recent Security Improvements
 
-- Added proper Ctrl+C handling for clean shutdown
 - Improved file change debouncing
 - Enhanced error messages with context
 - Added file size limits
