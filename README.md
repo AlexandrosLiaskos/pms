@@ -37,45 +37,6 @@ cargo build --release
 
 # Install the binary
 cargo install --path .
-```
-
-## Configuration
-
-1. Create the configuration directory:
-   ```bash
-   mkdir -p ~/.config/pms
-   ```
-
-2. Create and edit the configuration file:
-   ```bash
-   nano ~/.config/pms/config.toml
-   ```
-
-3. Add required configuration:
-   ```toml
-   # Required: GitHub authentication
-   github_token = "ghp_your_token_here"  # Must start with ghp_ or github_pat_
-   git_username = "your-github-username"
-   git_email = "your.email@example.com"
-
-   # Optional: Sync settings (defaults shown)
-   sync_interval = 2  # Minimum: 1 second
-   batch_size = 10    # Minimum: 1 file
-
-   # Optional: Security settings
-   [security]
-   max_file_size = 104857600  # 100MB
-   allow_force_push = false
-   token_refresh_days = 90
-   ignore_patterns = [
-       "*.env",
-       "*.key",
-       "*.pem",
-       "id_rsa",
-       "id_rsa.pub",
-       "*.log"
-   ]
-   ```
 
 ## Usage
 
@@ -89,13 +50,36 @@ pms
 pms /path/to/your/project
 ```
 
-The system will:
-1. Initialize a Git repository if needed
-2. Create a private GitHub repository
-3. Start monitoring file changes
-4. Automatically commit and push changes
+### What to Expect
 
-File status indicators in the terminal:
+![alt text](image.png)
+
+When you run PMS, you'll see output like this:
+
+```
+04:17:14 INIT Initializing Git repository
+04:17:14 SUCCESS Repository initialized successfully
+04:17:14 STARTUP Project Management System (PMS)
+04:17:14 STARTUP Monitoring directory: /home/alex/pms
+04:17:14 STARTUP Repository: https://github.com/username/pms
+04:17:14 STARTUP Press Ctrl+C to stop
+```
+
+As you make changes to files, you'll see real-time status updates:
+```
+04:20:00 ~ modified README.md
+04:20:04 SUCCESS Changes synced ✓
+04:22:37 ~ modified README.md
+04:22:41 SUCCESS Changes synced ✓
+04:23:13 → renamed SECURITY.md
+04:23:17 SUCCESS Changes synced ✓
+04:23:28 + added hhh.txt
+04:23:38 SUCCESS Changes synced ✓
+04:24:01 → renamed SECURITY.md
+04:24:04 SUCCESS Changes synced ✓
+```
+
+File status indicators:
 - `+` Yellow: File added
 - `~` Blue: File modified
 - `→` Bright Blue: File renamed
