@@ -1,13 +1,13 @@
 [package]
-name = "auto-git-sync"
+name = "pms"
 version = "0.1.0"
 edition = "2021"
 authors = ["Your Name <your.email@example.com>"]
-description = ""
-repository = "https://github.com/yourusername/auto-git-sync"
+description = "A Project Management System with Git integration"
+repository = "https://github.com/yourusername/pms"
 license = "MIT"
 readme = "README.md"
-keywords = ["git", "sync", "automation", "github", "backup"]
+keywords = ["project", "management", "git", "automation", "github"]
 categories = ["development-tools", "command-line-utilities"]
 
 [dependencies]
