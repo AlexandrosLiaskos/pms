@@ -1,195 +1,166 @@
-# Auto Git Sync
+# PMOS (Project Management and Organization System)
 
-🔄 A secure, real-time Git synchronization tool that automatically commits and pushes your changes to GitHub.
+PMOS is a lightweight project management system that automatically handles Git synchronization and project organization. It runs silently in the background, watching your project files and automatically syncing changes to GitHub.
 
-## Features
+## System Requirements
 
-- 🚀 **Real-time Synchronization**: Automatically detects and syncs file changes
-- 🔒 **Secure**: Safe token handling and secure GitHub integration
-- 🎨 **Visual Feedback**: Clear, colored status indicators for all operations
-- 🛡️ **Smart Handling**: Intelligent file event processing with debouncing
-- ⚡ **Efficient**: Minimal resource usage with smart batching of changes
-- 🎯 **Clean Exit**: Graceful shutdown with Ctrl+C
+**Important Note**: This alpha release is compatible with Unix-based systems only:
+- Linux (primary platform)
+- macOS (Unix-based)
+
+Windows support is planned for future releases.
+
+## Current Features (Alpha v0.1.0)
+
+- **Automated Git Synchronization**
+  - Real-time file system monitoring with detailed event logging
+  - Automatic commits with meaningful messages
+  - Automatic force pushing to GitHub
+  - Smart change detection with configurable sync intervals (default: 50ms)
+  - Continuous background monitoring until explicitly stopped
+  - Reliable daemon process with comprehensive logging and error tracking
+  - Immediate feedback on file system events and sync operations
+  - Detailed activity logging for debugging and monitoring
+  - Robust error handling and recovery
+  - Automatic directory creation and management
+  - Persistent file monitoring across sessions
+  - Structured logging with JSON output
+  - Real-time event tracking and processing
+  - Daemon-aware logging system
+  - Comprehensive JSON-formatted logs
+
+- **Background Process Management**
+  - Runs as a daemon process
+  - Persistent monitoring after `pmos start`
+  - Clean process management with proper cleanup
+  - Reliable PID file handling
+
+- **GitHub Integration**
+  - OAuth-based authentication
+  - Secure credential storage
+  - Automatic repository synchronization
+  - Force push to ensure remote sync
+
+## Installation
+
+Currently, PMOS needs to be built from source:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/pmos.git
+cd pmos
+
+# Build and install
+cargo install --path .
+```
 
 ## Quick Start
 
+1. Navigate to your project directory:
 ```bash
-# Install from source
-git clone https://github.com/yourusername/auto-git-sync
-cd auto-git-sync
-cargo build --release
-
-# Run for the first time to generate config
-./target/release/auto-git-sync
-
-# Edit config with your GitHub credentials
-nano ~/.config/auto-git-sync/config.toml
-
-# Start monitoring a directory
-./target/release/auto-git-sync /path/to/directory
+cd your-project
 ```
 
-## Configuration
-
-The config file is located at `~/.config/auto-git-sync/config.toml`:
-
-```toml
-# Required GitHub credentials
-github_token = "your_github_token"
-git_username = "YourGitHubUsername"
-git_email = "your.email@example.com"
-
-# Optional sync settings
-sync_interval = 2     # Sync interval in seconds (default: 2)
-batch_size = 10      # Maximum changes per commit (default: 10)
-
-[security]
-# Files to ignore (default patterns shown)
-ignore_patterns = [
-    "*.env",
-    "*.key",
-    "*.pem",
-    "id_rsa",
-    "id_rsa.pub",
-    "*.log"
-]
-max_file_size = 104857600  # Maximum file size in bytes (100MB)
-allow_force_push = false   # Whether to allow force pushing
-token_refresh_days = 90    # Reminder to refresh token
-```
-
-### GitHub Token Setup
-
-1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the "repo" scope only
-4. Copy the generated token to your config file
-
-## Usage
-
+2. Initialize PMOS in your project:
 ```bash
-# Monitor current directory
-auto-git-sync
-
-# Monitor specific directory
-auto-git-sync /path/to/directory
-
-# Stop monitoring
-Press Ctrl+C to exit cleanly
+pmos init
 ```
 
-### Status Indicators
-
-The tool provides clear visual feedback:
-
-- 🟡 `added` - New files
-- 🔵 `modified` - Content changes
-- 🌟 `renamed` - File renames
-- 🔴 `deleted` - Removed files
-- ✅ `SUCCESS` - Successful sync
-
-## Real-World Examples
-
-### Development Workflow
+3. Start monitoring (runs in background):
 ```bash
-# Start monitoring your project
-cd ~/projects/my-webapp
-auto-git-sync &
-
-# Continue development, changes auto-sync
-npm run dev
+pmos start
 ```
+This will start continuous monitoring that persists until explicitly stopped. All changes are automatically committed and force-pushed to the remote repository.
 
-### Document Sync
+4. Check monitoring status:
 ```bash
-# Sync your notes
-auto-git-sync ~/Documents/notes
-
-# Sync multiple directories (in separate terminals)
-auto-git-sync ~/Documents/blog-posts
-auto-git-sync ~/Documents/research
+pmos status
 ```
 
-### Team Collaboration
+5. Stop monitoring when needed:
 ```bash
-# Set up shared project sync
-cd ~/team-projects/shared-docs
-auto-git-sync
-
-# All team members' changes auto-sync to GitHub
+pmos stop
 ```
 
-## Security Features
+## Project Structure
 
-- 🔐 **Token Security**
-  - Secure storage in config file
-  - Automatic token validation
-  - Regular rotation reminders
-  - Permission scope validation
+PMOS creates a `.pmos` directory in your project with the following structure:
 
-- 🛡️ **File Safety**
-  - Smart file ignore patterns
-  - Temporary file detection
-  - Size limit enforcement
-  - .gitignore respect
+```
+.pmos/
+├── pmos.pid      # Process ID file
+├── pmos.log      # Activity and error logs (JSON formatted)
+├── monitor_active # Indicates active monitoring status
+└── config.toml   # Project configuration
+```
 
-- 🔒 **Network Security**
-  - HTTPS only
-  - Token-based auth
-  - No plain-text storage
-  - Secure API integration
+## Available Commands
 
-## Advanced Features
+- `pmos init [--name <project-name>]`: Initialize PMOS in the current directory
+- `pmos login`: Authenticate with GitHub
+- `pmos start`: Start continuous project monitoring (runs until stopped)
+- `pmos stop`: Stop project monitoring
+- `pmos status`: Show project status and monitoring state
 
-### Intelligent Change Detection
-- Debouncing to prevent rapid commits
-- Smart batching of related changes
-- Temporary file filtering
-- Rename operation detection
+## Current Limitations
 
-### Performance Optimization
-- Minimal resource usage
-- Efficient file system monitoring
-- Smart caching of file states
-- Batch processing of changes
+As this is an alpha release, please note:
 
-## Troubleshooting
+- Unix/Linux systems only (Windows support planned)
+- Only supports Git/GitHub (no other VCS)
+- Basic authentication flow (GitHub OAuth)
+- Simple commit message generation
+- Fixed sync interval (2 seconds)
+- Limited error recovery
+- Basic project statistics
 
-### Common Issues
+## Roadmap
 
-1. **Permission Denied**
-   ```bash
-   # Fix config file permissions
-   chmod 600 ~/.config/auto-git-sync/config.toml
-   ```
-
-2. **Token Invalid**
-   ```bash
-   # Verify token has 'repo' scope
-   # Regenerate if needed
-   ```
-
-3. **Changes Not Syncing**
-   ```bash
-   # Check ignore patterns
-   # Verify file sizes
-   # Ensure proper permissions
-   ```
+- [ ] Windows support
+- [ ] Configurable sync intervals
+- [ ] Custom commit message templates
+- [ ] Advanced project statistics
+- [ ] Multiple remote support
+- [ ] Conflict resolution
+- [ ] Web dashboard
+- [ ] VSCode extension
+- [ ] Team collaboration features
+- [ ] Project timeline tracking
+- [ ] Resource management
 
 ## Contributing
 
-We welcome contributions! See [Contributing Guidelines](CONTRIBUTING.md) for:
-- Code style guide
-- Pull request process
-- Development setup
-- Testing requirements
+PMOS is in active development and contributions are welcome! Here's how you can help:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Requirements
+
+- Unix-based operating system (Linux or macOS)
+- Rust 1.56 or later
+- Git installed and configured
+- GitHub account
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+As this is an alpha release, please:
+
+1. Check existing issues before reporting problems
+2. Provide detailed information when reporting bugs, including:
+   - Operating system and version
+   - Rust version
+   - Git version
+   - Steps to reproduce
+3. Use the GitHub issues tracker for feature requests
 
 ## Acknowledgments
 
-- Built with Rust 🦀
-- Uses [notify](https://github.com/notify-rs/notify) for file system events
-- Thanks to all contributors!
+PMOS is inspired by various project management and version control tools, aiming to combine their best features into a seamless, automated experience.
