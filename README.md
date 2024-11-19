@@ -4,14 +4,10 @@ PMS is a management system built entirely in Rust, that automatically handles Gi
 
 ## Features
 
-- 🔄 Real-time file monitoring and Git synchronization
-- 🔐 Secure GitHub token handling
-- 🎨 Colored status output for different operations
+- 🚀 Real-time file monitoring and Git synchronization
+- ✔️ Colored status output for different operations
 - ⚡ Intelligent debouncing for file changes
 - 🔒 Built-in security features
-- 🪟 Windows compatibility
-- 🔄 Support for file rename events
-- 📄 Support for all major document types
 
 ## Installation
 
