@@ -11,6 +11,7 @@ pub struct GitHandler {
     repo_path: PathBuf,
     config: Config,
     verbose: bool,
+    project_name: Option<String>,
 }
 
 impl GitHandler {
@@ -19,7 +20,16 @@ impl GitHandler {
             repo_path, 
             config,
             verbose: false,  
+            project_name: None,
         }
+    }
+
+    pub fn set_verbose(&mut self, verbose: bool) {
+        self.verbose = verbose;
+    }
+
+    pub fn set_project_name(&mut self, name: &str) {
+        self.project_name = Some(name.to_string());
     }
 
     fn log_git(&self, operation: &str) {

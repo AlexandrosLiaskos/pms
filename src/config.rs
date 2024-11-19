@@ -110,6 +110,61 @@ impl Config {
     pub fn get_token(&self) -> &Secret<String> {
         &self.github_token
     }
+
+    pub fn default() -> Self {
+        Self {
+            config_path: Self::get_config_path().unwrap_or_default(),
+            github_token: Secret::new(String::new()),
+            git_username: String::new(),
+            git_email: String::new(),
+            sync_interval: default_sync_interval(),
+            batch_size: default_batch_size(),
+            security: SecurityConfig::default(),
+        }
+    }
+
+    pub fn save(&self) -> Result<()> {
+        let config_str = toml::to_string(self).map_err(|e| {
+            PMSError::ConfigError(format!("Failed to serialize config: {}", e))
+        })?;
+
+        if let Some(parent) = self.config_path.parent() {
+            fs::create_dir_all(parent).map_err(|e| {
+                PMSError::ConfigError(format!("Failed to create config directory: {}", e))
+            })?;
+        }
+
+        fs::write(&self.config_path, config_str).map_err(|e| {
+            PMSError::ConfigError(format!("Failed to write config: {}", e))
+        })?;
+
+        // Set appropriate file permissions
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(&self.config_path)?.permissions();
+            perms.set_mode(0o600);
+            fs::set_permissions(&self.config_path, perms)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_github_token(&mut self, token: String) -> Result<()> {
+        validate_token(&token)?;
+        self.github_token = Secret::new(token);
+        Ok(())
+    }
+
+    pub fn set_git_username(&mut self, username: String) {
+        self.git_username = username;
+    }
+
+    pub fn set_git_email(&mut self, email: String) -> Result<()> {
+        validate_git_config("username", &email)?;
+        self.git_email = email;
+        Ok(())
+    }
 }
 
 impl Drop for Config {

@@ -2,6 +2,17 @@
 
 PMS is a management system built entirely in Rust, that automatically handles Git synchronization and project organization. It runs in the background, watching your project files and pushing immediately any change that takes place locally to a connected GitHub repository.
 
+## Features
+
+- 🔄 Real-time file monitoring and Git synchronization
+- 🔐 Secure GitHub token handling
+- 🎨 Colored status output for different operations
+- ⚡ Intelligent debouncing for file changes
+- 🔒 Built-in security features
+- 🪟 Windows compatibility
+- 🔄 Support for file rename events
+- 📄 Support for all major document types
+
 ## Installation
 
 ### Prerequisites
@@ -20,17 +31,102 @@ PMS is a management system built entirely in Rust, that automatically handles Gi
    git config --global user.email "your.email@example.com"
    ```
 
+### Install PMS
+
+```bash
+cargo install pms
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/yourusername/pms
+cd pms
+cargo install --path .
+```
+
+## Quick Start
+
+1. **Configure PMS**
+   ```bash
+   # Set up your GitHub credentials
+   pms config --token "your-github-token" --username "your-github-username" --email "your.email@example.com"
+   ```
+
+2. **Initialize a Project**
+   ```bash
+   # Create a new project
+   mkdir my-project
+   cd my-project
+   pms init --name "my-awesome-project"
+   ```
+
+3. **Start Monitoring**
+   ```bash
+   # Start watching for changes
+   pms watch
+   ```
+
+## Usage
+
+PMS provides several commands through its CLI:
+
+### Watch Command
+```bash
+# Watch current directory
+pms watch
+
+# Watch specific directory
+pms watch /path/to/project
+
+# Watch with verbose output
+pms watch -v
+```
+
+### Init Command
+```bash
+# Initialize current directory
+pms init
+
+# Initialize with specific name
+pms init --name my-project
+
+# Initialize specific directory
+pms init /path/to/project
+
+# Initialize with verbose output
+pms init -v
+```
+
+### Config Command
+```bash
+# Set GitHub token
+pms config --token "your-github-token"
+
+# Set Git username
+pms config --username "your-username"
+
+# Set Git email
+pms config --email "your.email@example.com"
+
+# Set multiple values at once
+pms config --token "token" --username "user" --email "email"
+```
+
+### Help
+```bash
+# Show general help
+pms --help
+
+# Show command-specific help
+pms watch --help
+pms init --help
+pms config --help
+```
 
 ## Configuration
 
-Create the configuration file at `~/.config/pms/config.toml`:
-
-```bash
-mkdir -p ~/.config/pms
-nano ~/.config/pms/config.toml
-```
-
-Add the following configuration (replace with your values):
+PMS uses a configuration file at `~/.config/pms/config.toml`:
 
 ```toml
 # Required: GitHub and Git settings
@@ -57,54 +153,26 @@ allow_force_push = true    # Allow force pushing to repository
 token_refresh_days = 90    # GitHub token refresh reminder
 ```
 
-## Usage
+## Status Indicators
 
-The program monitors a specified directory and automatically syncs changes to GitHub:
+When watching a directory, PMS uses colored indicators to show file status:
 
-```bash
-# Start monitoring the current directory
-cargo run
-```
-
-### Terminal Output Example
-
-Here's what you'll see when running PMS:
-
-![alt text](image.png)
-
-The system provides real-time feedback with colored indicators:
-
-```
-04:17:14 INIT Initializing Git repository
-04:17:14 SUCCESS Repository initialized successfully
-04:17:14 STARTUP Project Management System (PMS)
-04:17:14 STARTUP Monitoring directory: /home/alex/pms
-04:17:14 STARTUP Repository: https://github.com/username/pms
-04:17:14 STARTUP Press Ctrl+C to stop
-```
-
-File changes are shown with colored indicators:
-```
-04:20:00 ~ modified README.md
-04:20:04 SUCCESS Changes synced ✓
-04:22:37 ~ modified README.md
-04:22:41 SUCCESS Changes synced ✓
-04:23:13 → renamed SECURITY.md
-04:23:17 SUCCESS Changes synced ✓
-04:23:28 + added hhh.txt
-04:23:38 SUCCESS Changes synced ✓
-```
-
-Status Indicators:
 - `+` Yellow: File added
 - `~` Blue: File modified
 - `→` Bright Blue: File renamed
 - `-` Red: File deleted
 
-To stop monitoring, press `Ctrl+C`. The system will:
-1. Sync any pending changes
-2. Clean up resources
-3. Exit gracefully
+Example output:
+```
+04:20:00 ~ modified README.md
+04:20:04 SUCCESS Changes synced ✓
+04:22:37 ~ modified src/main.rs
+04:22:41 SUCCESS Changes synced ✓
+04:23:13 → renamed docs/CONTRIBUTING.md
+04:23:17 SUCCESS Changes synced ✓
+04:23:28 + added tests/test_file.rs
+04:23:38 SUCCESS Changes synced ✓
+```
 
 ## Troubleshooting
 
@@ -114,7 +182,7 @@ Common error messages and solutions:
    ```
    ERROR Failed to read config: Config file not found
    ```
-   Solution: Create config file at `~/.config/pms/config.toml`
+   Solution: Run `pms config` with required parameters
 
 2. **Token Errors**
    ```
@@ -134,6 +202,18 @@ Common error messages and solutions:
    ```
    Solution: Check GitHub token permissions and network connection
 
+## Security
+
+For security best practices and guidelines, please refer to [SECURITY.md](SECURITY.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and changes.
