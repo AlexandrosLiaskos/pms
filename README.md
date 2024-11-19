@@ -9,6 +9,8 @@ PMS is a management system built entirely in Rust, that automatically handles Gi
 - ⚡ Intelligent debouncing for file changes
 - 🔒 Built-in security features
 
+![image](https://github.com/user-attachments/assets/02c1fdd0-0f3e-4601-9f54-954f2e3a9d39)
+
 ## Installation
 
 ### Prerequisites
